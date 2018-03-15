@@ -118,7 +118,7 @@ public abstract class BaseServlet extends HttpServlet {
             }
             final int extPos = fileName.lastIndexOf('.');
             final String fileNameWithoutExt = fileName.substring(0, extPos);
-            final String ext = fileName.substring(extPos);
+            final String ext = fileName.substring(extPos + 1);
 
             fileName = fileNameWithoutExt.replaceAll("[^a-zA-Z0-9]", "_") + '.' + ext;
 
