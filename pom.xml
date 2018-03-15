@@ -4,7 +4,7 @@
     <groupId>com.idrsolutions</groupId>
     <artifactId>base-microservice-example</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0-alpha</version>
+    <version>1.0.1-alpha</version>
     <name>IDRsolutions Base Microservice Example</name>
     <description>Provides the shared classes used by IDRsolutions microservice examples.</description>
     <url>https://github.com/idrsolutions/base-microservice-example</url>
@@ -56,7 +56,7 @@
                 <configuration>
                     <serverId>ossrh</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
 
