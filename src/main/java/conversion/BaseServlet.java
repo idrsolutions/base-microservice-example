@@ -138,12 +138,9 @@ public abstract class BaseServlet extends HttpServlet {
 
             final File inputFile = new File(userInputDirPath + "/" + fileName);
 
-            final FileOutputStream output;
-            try {
-                output = new FileOutputStream(inputFile);
+            try (final FileOutputStream output = new FileOutputStream(inputFile)) {
                 output.write(fileBytes);
                 output.flush();
-                output.close();
             } catch (final IOException e) {
                 e.printStackTrace();
                 imap.remove(uuidStr);
