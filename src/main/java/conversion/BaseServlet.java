@@ -30,8 +30,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 public abstract class BaseServlet extends HttpServlet {
+
+    private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
     private static final String INPUTPATH = "../docroot/input/";
     private static final String OUTPUTPATH = "../docroot/output/";
@@ -143,6 +146,7 @@ public abstract class BaseServlet extends HttpServlet {
                 output.flush();
             } catch (final IOException e) {
                 e.printStackTrace();
+                LOG.severe(e.getMessage());
                 imap.remove(uuidStr);
                 doError(response, "Internal error", 500); // Failed to save file to disk
                 return;
@@ -166,6 +170,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         } catch (final ServletException | IOException e) {
             e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
     }
 
