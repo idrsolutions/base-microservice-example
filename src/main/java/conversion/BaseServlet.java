@@ -120,10 +120,10 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
             }
             final int extPos = fileName.lastIndexOf('.');
-            final String fileNameWithoutExt = fileName.substring(0, extPos);
+            final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^a-zA-Z0-9]", "_");
             final String ext = fileName.substring(extPos + 1);
 
-            fileName = fileNameWithoutExt.replaceAll("[^a-zA-Z0-9]", "_") + '.' + ext;
+            fileName = fileNameWithoutExt + '.' + ext;
 
             final String userInputDirPath = INPUTPATH + uuidStr;
             final File inputDir = new File(userInputDirPath);
