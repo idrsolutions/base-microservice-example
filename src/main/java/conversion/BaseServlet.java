@@ -120,7 +120,8 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
             }
             final int extPos = fileName.lastIndexOf('.');
-            final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^a-zA-Z0-9]", "_");
+            // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
+            final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
             final String ext = fileName.substring(extPos + 1);
 
             fileName = fileNameWithoutExt + '.' + ext;
