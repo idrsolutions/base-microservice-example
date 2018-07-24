@@ -88,7 +88,10 @@ public abstract class BaseServlet extends HttpServlet {
 
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-
+        
+        //System.out.println(request.getServerName());
+        //System.out.println(request.getServerPort());
+        
         try {
             allowCrossOrigin(response);
 
@@ -158,7 +161,9 @@ public abstract class BaseServlet extends HttpServlet {
 
             queue.submit(() -> {
                 try {
-                    convert(individual, parameterMap, name, inputDir.getAbsolutePath(), outputDir.getAbsolutePath(), fileNameWithoutExt, ext);
+                    convert(individual, parameterMap, name, inputDir.getAbsolutePath(),
+                            outputDir.getAbsolutePath(), fileNameWithoutExt, ext, 
+                            getContextURL(request));
                 } finally {
                     individual.isAlive = false;
                 }
@@ -177,7 +182,7 @@ public abstract class BaseServlet extends HttpServlet {
 
     abstract void convert(final Individual individual, final Map<String, String[]> parameterMap, final String fileName,
                           final String inputDirectory, final String outputDirectory,
-                          final String fileNameWithoutExt, final String ext);
+                          final String fileNameWithoutExt, final String ext, final String contextURL);
 
     private String getFileName(final Part part) {
         for (String content : part.getHeader("content-disposition").split(";")) {
@@ -187,6 +192,23 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return null;
+    }
+    
+    /**
+     * Gets the full URL before the part containing the path(s) specified in urlPatterns of the servlet.
+     * @param request
+     * @return protocol://servername/contextPath 
+     */
+    protected static String getContextURL(final HttpServletRequest request) {        
+        StringBuffer full = request.getRequestURL();
+        String context = request.getContextPath();
+        int index = full.indexOf(context);        
+        if (index == -1) {
+            // Better to return something rather than nothing? Or should exception be thrown?
+            return "";
+        }
+        index += context.length();
+        return full.substring(0, index);
     }
 
     protected static String[] getConversionParams(final String settings) {
