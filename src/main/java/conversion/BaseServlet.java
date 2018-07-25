@@ -89,9 +89,6 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
         
-        //System.out.println(request.getServerName());
-        //System.out.println(request.getServerPort());
-        
         try {
             allowCrossOrigin(response);
 
