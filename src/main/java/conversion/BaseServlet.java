@@ -198,16 +198,8 @@ public abstract class BaseServlet extends HttpServlet {
      * @return protocol://servername/contextPath
      */
     protected static String getContextURL(final HttpServletRequest request) {
-        StringBuffer full = request.getRequestURL();
-        String context = request.getContextPath();
-        // If context does not exist.
-        if (context.isEmpty()) {
-            context = request.getHeader("Host");
-        }
-        // Get url up to and including context.
-        int index = full.indexOf(context);
-        index += context.length();
-        return full.substring(0, index);
+        final StringBuffer full = request.getRequestURL();
+        return full.substring(0, full.length() - request.getServletPath().length());
     }
 
     protected static String[] getConversionParams(final String settings) {
