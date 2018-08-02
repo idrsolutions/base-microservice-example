@@ -23,13 +23,17 @@ package conversion;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public abstract class BaseServlet extends HttpServlet {
 
@@ -69,6 +73,7 @@ public abstract class BaseServlet extends HttpServlet {
         updateProgress(individual);
 
         response.setContentType("application/json");
+                
         try (final PrintWriter out = response.getWriter()) {
             out.println(individual.toJsonString());
         }
@@ -99,21 +104,31 @@ public abstract class BaseServlet extends HttpServlet {
             imap.put(uuidStr, individual);
 
             individual.isAlive = true;
+            
+            final byte[] fileBytes;
+            String fileName;
 
-            final Part filePart = request.getPart("file");
-            if (filePart == null) {
+            Part filePart = null;
+            try {
+                filePart = request.getPart("file");
+            } catch (ServletException e) { }
+            
+            final String conversionUrl = request.getParameter("conversionUrl");
+            
+            // Prioritise file in request over file passed via url.
+            if (filePart != null) {
+                fileBytes = getFileFromRequestPart(filePart);
+                fileName = getFileNameFromRequestPart(filePart);
+            } else if (conversionUrl != null) {
+                fileBytes = getFileFromUrl(conversionUrl);
+                fileName = getFileNameFromUrl(conversionUrl);
+            } else {
                 imap.remove(uuidStr);
                 doError(response, "Missing file", 400);
                 return;
-            }
-
-            final byte[] fileBytes = new byte[(int) filePart.getSize()];
-            final InputStream fileContent = filePart.getInputStream();
-            fileContent.read(fileBytes);
-            fileContent.close();
-
-            String fileName = getFileName(filePart);
-            if (fileName == null) {
+            }                     
+            
+            if (fileBytes == null || fileName == null) {
                 imap.remove(uuidStr);
                 doError(response, "Missing file name", 500); // Would this ever occur?
                 return;
@@ -170,17 +185,83 @@ public abstract class BaseServlet extends HttpServlet {
                 out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
             }
 
-        } catch (final ServletException | IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             LOG.severe(e.getMessage());
         }
     }
-
+    
     abstract void convert(final Individual individual, final Map<String, String[]> parameterMap, final String fileName,
             final String inputDirectory, final String outputDirectory,
             final String fileNameWithoutExt, final String ext, final String contextURL);
+    
+    /**
+     * Gets array of bytes from a url.
+     * @param strUrl
+     * @return the bytes downloaded from the url, null if no bytes downloaded.
+     * @throws IOException 
+     */
+    private static byte[] getFileFromUrl(final String strUrl) throws IOException {
+        
+        final int bufferSize = 1024; // Good buffer size?
+        
+        final URL url = new URL(strUrl);
+        final BufferedInputStream input = new BufferedInputStream(url.openStream());
+        final ByteArrayOutputStream data = new ByteArrayOutputStream();
+     
+        final byte[] buffer = new byte[bufferSize];
+        int count = 0;
+        
+        while ((count = input.read(buffer, 0, bufferSize)) != -1) {
+            data.write(buffer, 0, count);
+        }
+        
+        input.close();
+        data.close();
+        
+        if (data.size() > 0) {
+            return data.toByteArray();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract the filename from the url.
+     * @param url
+     * @return 
+     */
+    private String getFileNameFromUrl(String url) {
+        
+        // Get rid of parameters.
+        int index = url.indexOf("?");
+        if (index > 0) {
+            url = url.substring(0, index);
+        }
+        
+        String name = null;
+        
+        index = url.lastIndexOf("/") + 1;
+        if (index > 0 && index < url.length()) {
+            name = url.substring(index, url.length());
+        }
+        
+        if (name.length() == 0) {
+            name = null;
+        }
+        
+        return name;
+    }
+    
+    private static byte[] getFileFromRequestPart(Part filePart) throws IOException {
+        final byte[] fileBytes = new byte[(int) filePart.getSize()];
+        final InputStream fileContent = filePart.getInputStream();                
+        fileContent.read(fileBytes);
+        fileContent.close();
+        return fileBytes;
+    }
 
-    private String getFileName(final Part part) {
+    private String getFileNameFromRequestPart(final Part part) {
         for (String content : part.getHeader("content-disposition").split(";")) {
             if (content.trim().startsWith("filename")) {
                 return content.substring(
