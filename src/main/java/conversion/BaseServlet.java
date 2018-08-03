@@ -244,7 +244,6 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private byte[] getFileFromUrl(final String url, int retries) {
         while (retries > 0) {
-            System.out.println(retries);
             try {
                 byte[] bytes = getFileFromUrl(url);
                 
