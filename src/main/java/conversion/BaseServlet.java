@@ -38,6 +38,8 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final String INPUTPATH = "../docroot/input/";
     private static final String OUTPUTPATH = "../docroot/output/";
+    
+    private static final int NUM_DOWNLOAD_RETRIES = 2;
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
@@ -121,7 +123,7 @@ public abstract class BaseServlet extends HttpServlet {
                     fileName = getFileNameFromRequestPart(filePart);
                 }
             } else if (conversionUrl != null) {
-                fileBytes = getFileFromUrl(conversionUrl);
+                fileBytes = getFileFromUrl(conversionUrl, NUM_DOWNLOAD_RETRIES);
                 if (fileName == null) {
                     fileName = getFileNameFromUrl(conversionUrl);
                 }
@@ -131,9 +133,12 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
             }
 
-            if (fileBytes == null || fileName == null) {
+            if (fileBytes == null) {
                 imap.remove(uuidStr);
-                doError(response, "Missing file name", 500); // Would this ever occur?
+                doError(response, "Cannot get file data", 500);
+            } else if (fileName == null) {
+                imap.remove(uuidStr);
+                doError(response, "Missing file", 500); // Would this ever occur?
                 return;
             }
             final int extPos = fileName.lastIndexOf('.');
@@ -227,6 +232,32 @@ public abstract class BaseServlet extends HttpServlet {
             return data.toByteArray();
         }
 
+        return null;
+    }
+    
+    /**
+     * Gets array of bytes from url, if after n retries the bytes cannot be retrieved 
+     * the method returns null.
+     * @param url
+     * @param retries
+     * @return bytes downloaded from the url, null on error.
+     */
+    private byte[] getFileFromUrl(final String url, int retries) {
+        while (retries > 0) {
+            System.out.println(retries);
+            try {
+                byte[] bytes = getFileFromUrl(url);
+                
+                if (bytes == null) {
+                    throw new IOException();
+                }
+                
+                return bytes;
+            } catch (IOException e) {
+                retries--;
+            }
+        }
+        
         return null;
     }
 
