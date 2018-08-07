@@ -112,7 +112,9 @@ public abstract class BaseServlet extends HttpServlet {
             // Fail silently now and check for null later as the file might be passed via a url.
             try {
                 filePart = request.getPart("file");
-            } catch (ServletException e) { }
+            } catch (ServletException e) {
+                LOG.fine("Request is not of type multipart/form-data (no file attached), checking if URL input provided.");
+            }
 
             final String conversionUrl = request.getParameter("conversionUrl");
             
@@ -129,7 +131,7 @@ public abstract class BaseServlet extends HttpServlet {
                 }
             } else {
                 imap.remove(uuidStr);
-                doError(response, "Missing file", 400);
+                doError(response, "Missing file or URL", 400);
                 return;
             }
 
@@ -138,7 +140,7 @@ public abstract class BaseServlet extends HttpServlet {
                 doError(response, "Cannot get file data", 500);
             } else if (fileName == null) {
                 imap.remove(uuidStr);
-                doError(response, "Missing file", 500); // Would this ever occur?
+                doError(response, "Missing file", 500);
                 return;
             }
             final int extPos = fileName.lastIndexOf('.');
@@ -212,7 +214,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private static byte[] getFileFromUrl(final String strUrl) throws IOException {
 
-        final int bufferSize = 1024; // Good buffer size?
+        final int bufferSize = 1024;
 
         final URL url = new URL(strUrl);
         final BufferedInputStream input = new BufferedInputStream(url.openStream());
