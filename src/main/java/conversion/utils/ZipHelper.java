@@ -55,8 +55,8 @@ public class ZipHelper {
     }
 
     /**
-     * Zips the given file and writes it to the ZipOuputSream.
-     * If directory is given then calls 
+     * Zips the given file and writes it to the ZipOuputSream. If directory is
+     * given then calls 
      * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
      *
      * @param path
@@ -82,9 +82,9 @@ public class ZipHelper {
     }
 
     /**
-     * Zips the given folder (including all sub files and writes to 
+     * Zips the given folder (including all sub files and writes to
      * ZipOutputStream.
-     * 
+     *
      * @param path
      * @param srcFolder
      * @param zip
