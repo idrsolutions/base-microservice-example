@@ -27,8 +27,18 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Provides static utility method(s) for zipping directories.
+ */
 public class ZipHelper {
 
+    /**
+     * Zip a folder and all its contents to the destination zip.
+     *
+     * @param srcFolder
+     * @param destZipFile
+     * @throws IOException if there is a problem writing or reading the file
+     */
     public static void zipFolder(final String srcFolder, final String destZipFile) throws IOException {
         final File zipOut = new File(destZipFile);
         if (!zipOut.exists()) {
@@ -37,14 +47,23 @@ public class ZipHelper {
 
         try (
                 final FileOutputStream fileWriter = new FileOutputStream(zipOut);
-                final ZipOutputStream zip = new ZipOutputStream(fileWriter)
-        ) {
+                final ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
             addFolderToZip("", srcFolder, zip);
             zip.flush();
             fileWriter.flush();
         }
     }
 
+    /**
+     * Zips the given file and writes it to the ZipOuputSream.
+     * If directory is given then calls 
+     * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
+     *
+     * @param path
+     * @param srcFile
+     * @param zip
+     * @throws IOException if there is a problem while reading the file
+     */
     private static void addFileToZip(final String path, final String srcFile, final ZipOutputStream zip) throws IOException {
 
         final File folder = new File(srcFile);
@@ -62,6 +81,15 @@ public class ZipHelper {
         }
     }
 
+    /**
+     * Zips the given folder (including all sub files and writes to 
+     * ZipOutputStream.
+     * 
+     * @param path
+     * @param srcFolder
+     * @param zip
+     * @throws IOException if there is a problem while reading the file
+     */
     private static void addFolderToZip(final String path, final String srcFolder, final ZipOutputStream zip) throws IOException {
         final File folder = new File(srcFolder);
         final String[] fileList = folder.list();
