@@ -33,9 +33,9 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 /**
- * An extendable base for conversion microservices.
- * Provides general functionality for polling, file upload/download, 
- * initial creation of files and UUID's.
+ * An extendable base for conversion microservices. Provides general
+ * functionality for polling, file upload/download, initial creation of files
+ * and UUID's.
  */
 public abstract class BaseServlet extends HttpServlet {
 
@@ -51,10 +51,10 @@ public abstract class BaseServlet extends HttpServlet {
     private final ExecutorService queue = Executors.newFixedThreadPool(5);
 
     /**
-     * Sets the status of the response to the given error status. 
-     * This method should be called when setting error statuses on responses is
-     * called for. No Checking is done to make sure the error status is correct 
-     * or in the right range.
+     * Sets the status of the response to the given error status. This method
+     * should be called when setting error statuses on responses is called for.
+     * No Checking is done to make sure the error status is correct or in the
+     * right range.
      *
      * @param response
      * @param error
@@ -71,10 +71,9 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get request to the servlet.
-     * Used here for the purpose of polling the servlet for updates on progress.
-     * A UUID (unique user ID) must be provided by the client. This UUID is
-     * received when beginning a conversion request.
+     * Get request to the servlet. Used here for the purpose of polling the
+     * servlet for updates on progress. A UUID (unique user ID) must be provided
+     * by the client. This UUID is received when beginning a conversion request.
      * <p>
      * If no UUID or an unknown UUID is provided then a 404 response is
      * generated. The response contains a json string defined by
@@ -134,16 +133,17 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * A post request to the server.
-     * This method deals with the initial contact with the client. It looks for
-     * a file within the http request itself, it then falls back to looking for
-     * a file at a url that has passed in the parameters.
+     * A post request to the server. This method deals with the initial contact
+     * with the client. It looks for a file within the http request itself, it
+     * then falls back to looking for a file at a url that has passed in the
+     * parameters.
      * <p>
-     * If a file or url is not present a 400 error is returned.
-     * If the file cannot be parsed from the http request or fetched from the 
-     * url then a 500 is returned.
+     * If a file or url is not present a 400 error is returned. If the file
+     * cannot be parsed from the http request then a 500 error is returned. If a
+     * file cannot be downloaded from a passed url then the individual state is
+     * set to "error" and the conversion does not happen.
      * <p>
-     * If the file can be found and has been downloaded then an input dir and 
+     * If the file can be found and has been downloaded then an input dir and
      * and output dir for that file are created (overwritten if they already
      * exist).
      * <p>
@@ -151,8 +151,8 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request
      * @param response
-     * @see BaseServlet#convert(Individual, Map, String, String, String,
-     *                          String, String, String) 
+     * @see BaseServlet#convert(Individual, Map, String, String, String, String,
+     * String, String)
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
@@ -161,6 +161,7 @@ public abstract class BaseServlet extends HttpServlet {
 
             final String uuidStr = UUID.randomUUID().toString();
             final Individual individual = new Individual(uuidStr);
+            final String contextUrl = getContextURL(request);
 
             imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
 
@@ -168,7 +169,8 @@ public abstract class BaseServlet extends HttpServlet {
 
             individual.isAlive = true;
 
-            final byte[] fileBytes;
+            boolean isUrlDownload = false;
+
             // Attempt to get the filename from parameters (null if not in params).
             String fileName = request.getParameter("filename");
             Part filePart = null;
@@ -184,12 +186,11 @@ public abstract class BaseServlet extends HttpServlet {
 
             // Prioritise file in request over file passed via url.
             if (filePart != null) {
-                fileBytes = getFileFromRequestPart(filePart);
                 if (fileName == null) {
                     fileName = getFileNameFromRequestPart(filePart);
                 }
             } else if (conversionUrl != null) {
-                fileBytes = getFileFromUrl(conversionUrl, NUM_DOWNLOAD_RETRIES);
+                isUrlDownload = true;
                 if (fileName == null) {
                     fileName = getFileNameFromUrl(conversionUrl);
                 }
@@ -199,60 +200,43 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
             }
 
-            if (fileBytes == null) {
-                imap.remove(uuidStr);
-                doError(response, "Cannot get file data", 500);
-            } else if (fileName == null) {
+            if (fileName == null) {
                 imap.remove(uuidStr);
                 doError(response, "Missing file", 500);
                 return;
             }
-            final int extPos = fileName.lastIndexOf('.');
-            // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
-            final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
-            final String ext = fileName.substring(extPos + 1);
-
-            fileName = fileNameWithoutExt + '.' + ext;
-
-            final String userInputDirPath = INPUTPATH + uuidStr;
-            final File inputDir = new File(userInputDirPath);
-            if (!inputDir.exists()) {
-                inputDir.mkdirs();
-            }
-
-            //Creates the output dir based on session ID
-            final String userOutputDirPath = OUTPUTPATH + uuidStr;
-            final File outputDir = new File(userOutputDirPath);
-            if (outputDir.exists()) {
-                deleteFolder(outputDir);
-            }
-            outputDir.mkdirs();
-
-            final File inputFile = new File(userInputDirPath + "/" + fileName);
-
-            try (final FileOutputStream output = new FileOutputStream(inputFile)) {
-                output.write(fileBytes);
-                output.flush();
-            } catch (final IOException e) {
-                e.printStackTrace();
-                LOG.severe(e.getMessage());
-                imap.remove(uuidStr);
-                doError(response, "Internal error", 500); // Failed to save file to disk
-                return;
-            }
 
             final Map<String, String[]> parameterMap = request.getParameterMap();
+            // to avoid passing non-final variables into lambda.
             final String name = fileName;
 
-            queue.submit(() -> {
+            if (isUrlDownload) {
+                // Download this in another thread.
+                queue.submit(() -> {
+                    try {
+                        individual.state = "downloading";
+                        final byte[] fileBytes = getFileFromUrl(conversionUrl, NUM_DOWNLOAD_RETRIES);
+                        setupdAndConvertFile(true, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
+                    } catch (IOException e) {
+                        individual.state = "error";
+                        LOG.warning("Error while getting or converting file from url");
+                        LOG.warning(e.getMessage());
+                    }
+                });
+            } else {
+                byte[] fileBytes = null;
                 try {
-                    convert(individual, parameterMap, name, inputDir.getAbsolutePath(),
-                            outputDir.getAbsolutePath(), fileNameWithoutExt, ext,
-                            getContextURL(request));
-                } finally {
-                    individual.isAlive = false;
+                    fileBytes = getFileFromRequestPart(filePart);
+                } catch (IOException e) {
+                    imap.remove(uuidStr);
+                    doError(response, "Cannot get file data", 500);
                 }
-            });
+                // An IO error occured.
+                // setupAndConvertFile() can throw an IOException too but catch it with above try/catch.
+                if (fileBytes != null) {
+                    setupdAndConvertFile(false, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
+                }
+            }
 
             response.setContentType("application/json");
             try (final PrintWriter out = response.getWriter()) {
@@ -260,8 +244,87 @@ public abstract class BaseServlet extends HttpServlet {
             }
 
         } catch (final IOException e) {
+            try {
+                doError(response, "Cannot get file data", 500);
+            } catch (IOException ee) {
+                LOG.severe("Could not set error status to response. Logging stack trace.");
+            }
             e.printStackTrace();
             LOG.severe(e.getMessage());
+        }
+    }
+
+    /**
+     * Sets up variables and converts file. Setups up output directories and
+     * begins conversion. If isInThread is false then the conversion happens in
+     * the thread that called this method.
+     * <p>
+     * Arguments do not include request or response objects as if this method is
+     * run in a separate thread the garbage collector will not collect them.
+     *
+     * @param isInThread if this method has been run in a separate thread
+     * @param fileBytes
+     * @param individual
+     * @param contextUrl
+     * @param fileName
+     * @param uuidStr
+     * @param parameterMap
+     * @throws IOException
+     */
+    private void setupdAndConvertFile(final boolean isInThread,
+            final byte[] fileBytes,
+            final Individual individual,
+            final String contextUrl,
+            String fileName,
+            final String uuidStr,
+            final Map<String, String[]> parameterMap)
+            throws IOException {
+
+        final int extPos = fileName.lastIndexOf('.');
+        // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
+        final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
+        final String ext = fileName.substring(extPos + 1);
+
+        fileName = fileNameWithoutExt + '.' + ext;
+
+        final String userInputDirPath = INPUTPATH + uuidStr;
+        final File inputDir = new File(userInputDirPath);
+        if (!inputDir.exists()) {
+            inputDir.mkdirs();
+        }
+
+        //Creates the output dir based on session ID
+        final String userOutputDirPath = OUTPUTPATH + uuidStr;
+        final File outputDir = new File(userOutputDirPath);
+        if (outputDir.exists()) {
+            deleteFolder(outputDir);
+        }
+        outputDir.mkdirs();
+
+        final File inputFile = new File(userInputDirPath + "/" + fileName);
+
+        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
+            output.write(fileBytes);
+            output.flush();
+        }
+
+        final String name = fileName;
+
+        Runnable conversion = () -> {
+            try {
+                convert(individual, parameterMap, name, inputDir.getAbsolutePath(),
+                        outputDir.getAbsolutePath(), fileNameWithoutExt, ext,
+                        contextUrl);
+            } finally {
+                individual.isAlive = false;
+            }
+        };
+
+        // Don't start a new thread for conversion if we are already in a separate thread.
+        if (isInThread) {
+            conversion.run();
+        } else {
+            queue.submit(conversion);
         }
     }
 
@@ -319,19 +382,18 @@ public abstract class BaseServlet extends HttpServlet {
             return data.toByteArray();
         }
 
-        return null;
+        throw new IOException();
     }
 
     /**
-     * Gets array of bytes from url.
-     * If after n retries the bytes cannot be
+     * Gets array of bytes from url. If after n retries the bytes cannot be
      * retrieved the method returns null.
      *
      * @param url
      * @param retries
      * @return bytes downloaded from the url, null on error.
      */
-    private byte[] getFileFromUrl(final String url, int retries) {
+    private byte[] getFileFromUrl(final String url, int retries) throws IOException {
         while (retries > 0) {
             try {
                 byte[] bytes = getFileFromUrl(url);
@@ -346,7 +408,7 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
 
-        return null;
+        throw new IOException();
     }
 
     /**
@@ -421,10 +483,9 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the conversion parameters. 
-     * The parameter key value pairs are held in a semi-colon separated list
-     * ";" with a colon separating the individual key value pairs.
-     * E.g. "key1:val1;key2:val2;etc..."
+     * Get the conversion parameters. The parameter key value pairs are held in
+     * a semi-colon separated list ";" with a colon separating the individual
+     * key value pairs. E.g. "key1:val1;key2:val2;etc..."
      *
      * @param settings
      * @return a String array in the form [key1, val1, key2, val2, etc...]
@@ -462,8 +523,8 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Update the progress of the conversion.
-     * This method is usually called after a poll from a client to the servlet.
+     * Update the progress of the conversion. This method is usually called
+     * after a poll from a client to the servlet.
      *
      * @param individual
      */
