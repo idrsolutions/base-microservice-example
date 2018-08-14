@@ -216,9 +216,10 @@ public abstract class BaseServlet extends HttpServlet {
                     try {
                         individual.state = "downloading";
                         final byte[] fileBytes = getFileFromUrl(conversionUrl, NUM_DOWNLOAD_RETRIES);
-                        setupdAndConvertFile(true, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
+                        setupAndConvertFile(true, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
                     } catch (IOException e) {
                         individual.state = "error";
+                        individual.errorCode = "500";
                         LOG.warning("Error while getting or converting file from url");
                         LOG.warning(e.getMessage());
                     }
@@ -230,11 +231,12 @@ public abstract class BaseServlet extends HttpServlet {
                 } catch (IOException e) {
                     imap.remove(uuidStr);
                     doError(response, "Cannot get file data", 500);
+                    return;
                 }
                 // An IO error occured.
                 // setupAndConvertFile() can throw an IOException too but catch it with above try/catch.
                 if (fileBytes != null) {
-                    setupdAndConvertFile(false, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
+                    setupAndConvertFile(false, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
                 }
             }
 
@@ -271,7 +273,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @param parameterMap
      * @throws IOException
      */
-    private void setupdAndConvertFile(final boolean isInThread,
+    private void setupAndConvertFile(final boolean isInThread,
             final byte[] fileBytes,
             final Individual individual,
             final String contextUrl,
