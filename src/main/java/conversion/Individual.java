@@ -27,10 +27,6 @@ import java.util.Map;
 /**
  * Represents a file conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
- * <p>
- * Information stores includes: UUID, isAlive flag, a timestamp, and the curent
- * state of the conversion ("queued", "processing", "done", ...). It can also
- * hold custom values to be passed to the user.
  */
 class Individual {
 
@@ -46,7 +42,7 @@ class Individual {
     /**
      * Create individual with a specific UUID.
      *
-     * @param uuid
+     * @param uuid the uuid to identify this individual
      */
     Individual(final String uuid) {
         this.uuid = uuid;
@@ -55,10 +51,7 @@ class Individual {
     }
 
     /**
-     * Get a JSON string representing the current state of this individual. JSON
-     * string holds the current state of the conversion, the error code (if it
-     * exists), as well as any custom key value pairs set though 
-     * {@link Individual#setValue(String, String) }
+     * Get a JSON string representing the current state of this individual.
      *
      * @return a JSON string representing this individuals state
      */
@@ -77,11 +70,11 @@ class Individual {
     }
 
     /**
-     * Adds a key value pair to he individual to pass to the client the next
+     * Adds a key value pair to the individual to pass to the client the next
      * time the client polls the server.
      *
-     * @param key
-     * @param value
+     * @param key the key to be passed to the client
+     * @param value the value mapped to the key
      */
     public void setValue(final String key, final String value) {
         customValues.put(key, value);

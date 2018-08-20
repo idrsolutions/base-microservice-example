@@ -35,8 +35,8 @@ public class ZipHelper {
     /**
      * Zip a folder and all its contents to the destination zip.
      *
-     * @param srcFolder
-     * @param destZipFile
+     * @param srcFolder the source folder to zip
+     * @param destZipFile the name of the zip file to zip to
      * @throws IOException if there is a problem writing or reading the file
      */
     public static void zipFolder(final String srcFolder, final String destZipFile) throws IOException {
@@ -60,9 +60,9 @@ public class ZipHelper {
      * given then calls 
      * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
      *
-     * @param path
-     * @param srcFile
-     * @param zip
+     * @param path the path to the file to zip
+     * @param srcFile the name of the file to zip
+     * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
     private static void addFileToZip(final String path, final String srcFile, final ZipOutputStream zip) throws IOException {
@@ -86,9 +86,9 @@ public class ZipHelper {
      * Zips the given folder (including all sub files and writes to
      * ZipOutputStream.
      *
-     * @param path
-     * @param srcFolder
-     * @param zip
+     * @param path The path to the folder to recursively zip
+     * @param srcFolder the name of the folder to zip
+     * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
     private static void addFolderToZip(final String path, final String srcFolder, final ZipOutputStream zip) throws IOException {

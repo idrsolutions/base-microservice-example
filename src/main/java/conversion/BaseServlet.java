@@ -48,14 +48,11 @@ public abstract class BaseServlet extends HttpServlet {
     private final ExecutorService queue = Executors.newFixedThreadPool(5);
 
     /**
-     * Sets the status of the response to the given error status. This method
-     * should be called when setting error statuses on responses is called for.
-     * No Checking is done to make sure the error status is correct or in the
-     * right range.
+     * Set an HTTP error code and message to the given response.
      *
-     * @param response
-     * @param error
-     * @param status
+     * @param response The response to send to the client
+     * @param error the error message to pass in the body of the client
+     * @param status the HTTP status to set the response to
      * @throws IOException if the error message cannot be written to the
      * response.
      */
@@ -68,16 +65,11 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get request to the servlet. Used here for the purpose of polling the
-     * servlet for updates on progress. A UUID (unique user ID) must be provided
-     * by the client. This UUID is received when beginning a conversion request.
-     * <p>
-     * If no UUID or an unknown UUID is provided then a 404 response is
-     * generated. The response contains a json string defined by
-     * {@link Individual#toJsonString()}.
+     * Get request to the servlet. See API docs in respective end servlets for
+     * more information.
      *
-     * @param request
-     * @param response
+     * @param request the request from the client
+     * @param response the response to send once this method exits
      * @throws IOException if the error message cannot be written to the
      * response.
      * @see Individual#toJsonString()
@@ -107,10 +99,11 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Responds with the communication methods that this server supports.
+     * Writes to response object with the communication methods that this server
+     * supports.
      *
-     * @param request
-     * @param response
+     * @param request the request from the client
+     * @param response the response to send once this method exits
      * @see BaseServlet#allowCrossOrigin(HttpServletResponse)
      */
     @Override
@@ -130,19 +123,10 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * A post request to the server. This method deals with the initial contact
-     * with the client. It looks for a file within the http request.
-     * <p>
-     * If a file is not present a 400 error is returned. If the file cannot be
-     * parsed from the http request then a 500 is returned.
-     * <p>
-     * If the file is present then an input dir and and output dir for that file
-     * are created (overwritten if they already exist).
-     * <p>
-     * The convert() method is then started in a separate thread.
+     * A post request to the server.
      *
-     * @param request
-     * @param response
+     * @param request the request from the client
+     * @param response the response to send once this method exits
      * @see BaseServlet#convert(Individual, Map, String, String, String, String,
      * String, String)
      */
@@ -239,23 +223,18 @@ public abstract class BaseServlet extends HttpServlet {
 
     /**
      * This method converts a file and writes it to the output directory under
-     * the Individuals UUID. It is called at the point when a valid user file is
-     * stored in the input directory.
-     * <p>
-     * No Validation is done on the file when this method is called and it is up
-     * to the implementing class to determine if the given file is actually a
-     * pdf. Is it also up to the implementing class to generate preview/download
-     * urls, zip the output, and set the individual state to processed.
+     * the Individuals UUID.
      *
      * @param individual Internal representation of individual who made this
-     * request.
-     * @param parameterMap the map of parameters from the request.
-     * @param fileName
-     * @param inputDirectory
-     * @param outputDirectory
-     * @param fileNameWithoutExt
-     * @param ext
-     * @param contextURL The url from the protocol up to the servlet url url
+     * request
+     * @param parameterMap the map of parameters from the request
+     * @param fileName the name of the file on disk
+     * @param inputDirectory the directory of the uploaded file
+     * @param outputDirectory the directory the converted file should be written
+     * to
+     * @param fileNameWithoutExt the filename without its extension
+     * @param ext the extension of the file name
+     * @param contextURL The url from the protocol up to the servlet url
      * pattern.
      */
     abstract void convert(final Individual individual, final Map<String, String[]> parameterMap, final String fileName,
@@ -265,8 +244,8 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Get the filename of the file contained in this request part.
      *
-     * @param part
-     * @return the file name or null if it does not exist.
+     * @param part the file part from the HTTP request
+     * @return the file name or null if it does not exist
      */
     private String getFileName(final Part part) {
         for (String content : part.getHeader("content-disposition").split(";")) {
@@ -282,7 +261,7 @@ public abstract class BaseServlet extends HttpServlet {
      * Gets the full URL before the part containing the path(s) specified in
      * urlPatterns of the servlet.
      *
-     * @param request
+     * @param request the request from the client
      * @return protocol://servername/contextPath
      */
     protected static String getContextURL(final HttpServletRequest request) {
@@ -291,11 +270,10 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the conversion parameters. The parameter key value pairs are held in
-     * a semi-colon separated list ";" with a colon separating the individual
-     * key value pairs. E.g. "key1:val1;key2:val2;etc..."
+     * Get the conversion parameters.
      *
-     * @param settings
+     * @param settings a list of k/v pairs in the form:
+     * "key1:val1;key2:val2;etc..."
      * @return a String array in the form [key1, val1, key2, val2, etc...]
      */
     protected static String[] getConversionParams(final String settings) {
@@ -316,7 +294,7 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Delete a folder and all of its contents.
      *
-     * @param dirPath
+     * @param dirPath the path to the folder to delete
      */
     private static void deleteFolder(final File dirPath) {
         final File[] files = dirPath.listFiles();
@@ -331,10 +309,9 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Update the progress of the conversion. This method is usually called
-     * after a poll from a client to the servlet.
+     * Update the progress of the conversion.
      *
-     * @param individual
+     * @param individual the individual object for this client
      */
     abstract void updateProgress(final Individual individual);
 
