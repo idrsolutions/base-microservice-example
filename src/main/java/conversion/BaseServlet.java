@@ -20,10 +20,10 @@
  */
 package conversion;
 
+import conversion.utils.DownloadHelper;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
-import java.net.URL;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -32,61 +32,42 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-/**
- * An extendable base for conversion microservices. Provides general
- * functionality for polling, file upload/download, initial creation of files
- * and UUID's.
- */
 public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
     private static final String INPUTPATH = "../docroot/input/";
     private static final String OUTPUTPATH = "../docroot/output/";
-
+    
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
-    private final ExecutorService queue = Executors.newFixedThreadPool(5);
+    private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
+    private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
+    
+    class QueueItem {
+        Individual individual;
+        Map<String, String[]> params;
+        File inputFile;
+        File outputDir;
+        String contextUrl;
+    }
 
-    /**
-     * Sets the status of the response to the given error status. This method
-     * should be called when setting error statuses on responses is called for.
-     * No Checking is done to make sure the error status is correct or in the
-     * right range.
-     *
-     * @param response
-     * @param error
-     * @param status
-     * @throws IOException if the error message cannot be written to the
-     * response.
-     */
-    private static void doError(final HttpServletResponse response, final String error, final int status) throws IOException {
+    private static void doError(final HttpServletResponse response, final String error, final int status) {
         response.setContentType("application/json");
         response.setStatus(status);
         try (final PrintWriter out = response.getWriter()) {
             out.println("{\"error\":\"" + error + "\"}");
+        } catch (final IOException e) {
+            e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
     }
 
-    /**
-     * Get request to the servlet. Used here for the purpose of polling the
-     * servlet for updates on progress. A UUID (unique user ID) must be provided
-     * by the client. This UUID is received when beginning a conversion request.
-     * <p>
-     * If no UUID or an unknown UUID is provided then a 404 response is
-     * generated. The response contains a json string defined by
-     * {@link Individual#toJsonString()}.
-     *
-     * @param request
-     * @param response
-     * @throws IOException if the error message cannot be written to the
-     * response.
-     * @see Individual#toJsonString()
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
         allowCrossOrigin(response);
         final String uuidStr = request.getParameter("uuid");
         if (uuidStr == null) {
@@ -100,369 +81,209 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        updateProgress(individual);
-
         response.setContentType("application/json");
-
         try (final PrintWriter out = response.getWriter()) {
             out.println(individual.toJsonString());
         }
     }
 
-    /**
-     * Responds with the communication methods that this server supports.
-     *
-     * @param request
-     * @param response
-     * @see BaseServlet#allowCrossOrigin(HttpServletResponse)
-     */
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) {
         allowCrossOrigin(response);
     }
 
-    /**
-     * Allow cross origin requests according to the CORS standard.
-     *
-     * @param response
-     */
     private void allowCrossOrigin(final HttpServletResponse response) {
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
         response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin");
     }
 
-    /**
-     * A post request to the server. This method deals with the initial contact
-     * with the client. It looks for a file within the http request itself, it
-     * then falls back to looking for a file at a url that has passed in the
-     * parameters.
-     * <p>
-     * If a file or url is not present a 400 error is returned. If the file
-     * cannot be parsed from the http request then a 500 error is returned. If a
-     * file cannot be downloaded from a passed url then the individual state is
-     * set to "error" and the conversion does not happen.
-     * <p>
-     * If the file can be found and has been downloaded then an input dir and
-     * and output dir for that file are created (overwritten if they already
-     * exist).
-     * <p>
-     * The convert() method is then started in a separate thread.
-     *
-     * @param request
-     * @param response
-     * @see BaseServlet#convert(Individual, Map, String, String, String, String,
-     * String, String)
-     */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-        try {
-            allowCrossOrigin(response);
 
-            final String uuidStr = UUID.randomUUID().toString();
-            final Individual individual = new Individual(uuidStr);
-            final String contextUrl = getContextURL(request);
+        allowCrossOrigin(response);
 
-            imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
+        final String uuidStr = UUID.randomUUID().toString();
+        final Individual individual = new Individual(uuidStr);
 
-            imap.put(uuidStr, individual);
+        imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
 
-            individual.isAlive = true;
+        final String inputType = request.getParameter("input");
+        if (inputType == null) {
+            doError(response, "Missing input type", 400);
+            return;
+        } else {
 
-            boolean isUrlDownload = false;
-
-            // Attempt to get the filename from parameters (null if not in params).
-            String fileName = request.getParameter("filename");
-            Part filePart = null;
-
-            // Fail silently now and check for null later as the file might be passed via a url.
-            try {
-                filePart = request.getPart("file");
-            } catch (ServletException e) {
-                LOG.fine("Request is not of type multipart/form-data (no file attached), checking if URL input provided.");
-            }
-
-            final String conversionUrl = request.getParameter("conversionUrl");
-
-            // Prioritise file in request over file passed via url.
-            if (filePart != null) {
-                if (fileName == null) {
-                    fileName = getFileNameFromRequestPart(filePart);
-                }
-            } else if (conversionUrl != null) {
-                isUrlDownload = true;
-                if (fileName == null) {
-                    fileName = getFileNameFromUrl(conversionUrl);
-                }
-            } else {
-                imap.remove(uuidStr);
-                doError(response, "Missing file or URL", 400);
-                return;
-            }
-
-            if (fileName == null) {
-                imap.remove(uuidStr);
-                doError(response, "Missing file", 500);
-                return;
-            }
-
-            final Map<String, String[]> parameterMap = request.getParameterMap();
-            // to avoid passing non-final variables into lambda.
-            final String name = fileName;
-
-            if (isUrlDownload) {
-                // Download this in another thread.
-                queue.submit(() -> {
-                    try {
-                        individual.state = "downloading";
-                        final byte[] fileBytes = getFileFromUrl(conversionUrl, NUM_DOWNLOAD_RETRIES);
-                        setupAndConvertFile(true, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
-                    } catch (IOException e) {
-                        individual.state = "error";
-                        individual.errorCode = "500";
-                        LOG.warning("Error while getting or converting file from url");
-                        LOG.warning(e.getMessage());
+            switch (inputType) {
+                case "upload":
+                    if (!handleFileFromRequest(individual, request, response)) {
+                        return;
                     }
-                });
-            } else {
-                byte[] fileBytes = null;
-                try {
-                    fileBytes = getFileFromRequestPart(filePart);
-                } catch (IOException e) {
-                    imap.remove(uuidStr);
-                    doError(response, "Cannot get file data", 500);
+                    break;
+
+                case "download":
+                    if (!handleFileFromUrl(individual, request, response)) {
+                        return;
+                    }
+                    break;
+
+                default:
+                    doError(response, "Unrecognised input type", 400);
                     return;
-                }
-                // An IO error occured.
-                // setupAndConvertFile() can throw an IOException too but catch it with above try/catch.
-                if (fileBytes != null) {
-                    setupAndConvertFile(false, fileBytes, individual, contextUrl, name, uuidStr, parameterMap);
-                }
             }
+        }
 
-            response.setContentType("application/json");
-            try (final PrintWriter out = response.getWriter()) {
-                out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
-            }
+        imap.put(uuidStr, individual);
 
+        response.setContentType("application/json");
+        try (final PrintWriter out = response.getWriter()) {
+            out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
         } catch (final IOException e) {
-            try {
-                doError(response, "Cannot get file data", 500);
-            } catch (IOException ee) {
-                LOG.severe("Could not set error status to response. Logging stack trace.");
-            }
             e.printStackTrace();
             LOG.severe(e.getMessage());
         }
     }
 
-    /**
-     * Sets up variables and converts file. Setups up output directories and
-     * begins conversion. If isInThread is false then the conversion happens in
-     * the thread that called this method.
-     * <p>
-     * Arguments do not include request or response objects as if this method is
-     * run in a separate thread the garbage collector will not collect them.
-     *
-     * @param isInThread if this method has been run in a separate thread
-     * @param fileBytes
-     * @param individual
-     * @param contextUrl
-     * @param fileName
-     * @param uuidStr
-     * @param parameterMap
-     * @throws IOException
-     */
-    private void setupAndConvertFile(final boolean isInThread,
-            final byte[] fileBytes,
-            final Individual individual,
-            final String contextUrl,
-            String fileName,
-            final String uuidStr,
-            final Map<String, String[]> parameterMap)
-            throws IOException {
-
+    private static String sanitizeFileName(final String fileName) {
         final int extPos = fileName.lastIndexOf('.');
         // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
         final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
         final String ext = fileName.substring(extPos + 1);
 
-        fileName = fileNameWithoutExt + '.' + ext;
+        return fileNameWithoutExt + '.' + ext;
+    }
 
-        final String userInputDirPath = INPUTPATH + uuidStr;
+    private static File createInputDirectory(final String uuid) {
+        final String userInputDirPath = INPUTPATH + uuid;
         final File inputDir = new File(userInputDirPath);
         if (!inputDir.exists()) {
             inputDir.mkdirs();
         }
+        return inputDir;
+    }
 
-        //Creates the output dir based on session ID
-        final String userOutputDirPath = OUTPUTPATH + uuidStr;
+    private static File createOutputDirectory(final String uuid) {
+        final String userOutputDirPath = OUTPUTPATH + uuid;
         final File outputDir = new File(userOutputDirPath);
         if (outputDir.exists()) {
             deleteFolder(outputDir);
         }
         outputDir.mkdirs();
+        return outputDir;
+    }
 
-        final File inputFile = new File(userInputDirPath + "/" + fileName);
-
-        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
-            output.write(fileBytes);
-            output.flush();
+    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+        final Part filePart;
+        try {
+            filePart = request.getPart("file");
+        } catch (IOException e) {
+            doError(response, "Error handling file", 500);
+            return false;
+        } catch (ServletException e) {
+            doError(response, "Missing file", 400);
+            return false;
         }
 
-        final String name = fileName;
+        if (filePart == null) {
+            doError(response, "Missing file", 400);
+            return false;
+        }
 
-        Runnable conversion = () -> {
+        final String originalFileName = getFileName(filePart);
+        if (originalFileName == null) {
+            doError(response, "Missing file name", 500); // Would this ever occur?
+            return false;
+        }
+
+        final File inputFile;
+        try {
+            final InputStream fileContent = filePart.getInputStream();
+            final byte[] fileBytes = new byte[(int) filePart.getSize()];
+            fileContent.read(fileBytes);
+            fileContent.close();
+            inputFile = outputFile(originalFileName, individual, fileBytes);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            LOG.severe(e.getMessage());
+            doError(response, "Internal error", 500); // Failed to save file to disk
+            return false;
+        }
+
+        final File outputDir = createOutputDirectory(individual.uuid);
+
+        addToQueue(individual, request.getParameterMap(), inputFile, outputDir, getContextURL(request));
+
+        return true;
+    }
+
+    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+        
+        String url = request.getParameter("url");
+        if (url == null) {
+            doError(response, "No url given", 400);
+            return false;
+        }
+        // This does not need to be asynchronous
+        String filename = DownloadHelper.getFileNameFromUrl(url);
+        // In case a filename cannot be parsed from the url.
+        if (filename == null) {
+            filename = "document.pdf";
+        }
+        
+        // To allow use in lambda function.
+        final String finalFilename = filename;
+        final String contextUrl = getContextURL(request);
+        final Map<String, String[]> parameterMap = request.getParameterMap();
+        
+        downloadQueue.submit(() -> {
+            File inputFile;
             try {
-                convert(individual, parameterMap, name, inputDir.getAbsolutePath(),
-                        outputDir.getAbsolutePath(), fileNameWithoutExt, ext,
-                        contextUrl);
+                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES);
+                inputFile = outputFile(finalFilename, individual, fileBytes);
+            } catch (IOException e) {
+                individual.doError(1200);
+                return;
+            }
+            
+            final File outputDir = createOutputDirectory(individual.uuid);            
+            addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
+        });
+        
+        return true;
+    }
+
+    private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
+            final File outputDir, final String contextUrl) {
+        convertQueue.submit(() -> {
+            QueueItem item = new QueueItem();
+            item.individual = individual;
+            item.params = params;
+            item.inputFile = inputFile;
+            item.outputDir = outputDir;
+            item.contextUrl = contextUrl;
+            try {
+                convert(item);
             } finally {
                 individual.isAlive = false;
             }
-        };
-
-        // Don't start a new thread for conversion if we are already in a separate thread.
-        if (isInThread) {
-            conversion.run();
-        } else {
-            queue.submit(conversion);
-        }
+        });
     }
 
-    /**
-     * This method converts a file and writes it to the output directory under
-     * the Individuals UUID. It is called at the point when a valid user file is
-     * stored in the input directory.
-     * <p>
-     * No Validation is done on the file when this method is called and it is up
-     * to the implementing class to determine if the given file is actually a
-     * pdf. Is it also up to the implementing class to generate preview/download
-     * urls, zip the output, and set the individual state to processed.
-     *
-     * @param individual Internal representation of individual who made this
-     * request.
-     * @param parameterMap the map of parameters from the request.
-     * @param fileName
-     * @param inputDirectory
-     * @param outputDirectory
-     * @param fileNameWithoutExt
-     * @param ext
-     * @param contextURL The url up from the protocol up to the servlets url
-     * pattern.
-     */
-    abstract void convert(final Individual individual, final Map<String, String[]> parameterMap, final String fileName,
-            final String inputDirectory, final String outputDirectory,
-            final String fileNameWithoutExt, final String ext, final String contextURL);
+    abstract void convert(QueueItem conversionData);
+    
+    private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
+        final File inputDir = createInputDirectory(individual.uuid);
+        final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
-    /**
-     * Gets array of file bytes from a url.
-     *
-     * @param strUrl
-     * @return the bytes downloaded from the url, null if no bytes downloaded.
-     * @throws IOException
-     */
-    private static byte[] getFileFromUrl(final String strUrl) throws IOException {
-
-        final int bufferSize = 1024;
-
-        final URL url = new URL(strUrl);
-        final BufferedInputStream input = new BufferedInputStream(url.openStream());
-        final ByteArrayOutputStream data = new ByteArrayOutputStream();
-
-        final byte[] buffer = new byte[bufferSize];
-        int count = 0;
-
-        while ((count = input.read(buffer, 0, bufferSize)) != -1) {
-            data.write(buffer, 0, count);
+        try (final FileOutputStream output = new FileOutputStream(inputFile)) {            
+            output.write(fileBytes);
+            output.flush();
         }
-
-        input.close();
-        data.close();
-
-        if (data.size() > 0) {
-            return data.toByteArray();
-        }
-
-        throw new IOException();
+        
+        return inputFile;
     }
 
-    /**
-     * Gets array of bytes from url. If after n retries the bytes cannot be
-     * retrieved the method returns null.
-     *
-     * @param url
-     * @param retries
-     * @return bytes downloaded from the url, null on error.
-     */
-    private byte[] getFileFromUrl(final String url, int retries) throws IOException {
-        while (retries > 0) {
-            try {
-                byte[] bytes = getFileFromUrl(url);
-
-                if (bytes == null) {
-                    throw new IOException();
-                }
-
-                return bytes;
-            } catch (IOException e) {
-                retries--;
-            }
-        }
-
-        throw new IOException();
-    }
-
-    /**
-     * Extract the filename from the url.
-     *
-     * @param url
-     * @return
-     */
-    private String getFileNameFromUrl(String url) {
-
-        // Get rid of parameters.
-        int index = url.indexOf("?");
-        if (index > 0) {
-            url = url.substring(0, index);
-        }
-
-        String name = null;
-
-        index = url.lastIndexOf("/") + 1;
-        if (index > 0 && index < url.length()) {
-            name = url.substring(index, url.length());
-        }
-
-        if (name.length() == 0) {
-            name = null;
-        }
-
-        return name;
-    }
-
-    /**
-     * Gets file bytes stored in the request part.
-     *
-     * @param filePart
-     * @return
-     * @throws IOException if the file cannot be read.
-     */
-    private static byte[] getFileFromRequestPart(Part filePart) throws IOException {
-        final byte[] fileBytes = new byte[(int) filePart.getSize()];
-        final InputStream fileContent = filePart.getInputStream();
-        fileContent.read(fileBytes);
-        fileContent.close();
-        return fileBytes;
-    }
-
-    /**
-     * Get the filename of the file contained in this request part.
-     *
-     * @param part
-     * @return the file name or null if it does not exist.
-     */
-    private String getFileNameFromRequestPart(final Part part) {
+    private String getFileName(final Part part) {
         for (String content : part.getHeader("content-disposition").split(";")) {
             if (content.trim().startsWith("filename")) {
                 return content.substring(
@@ -472,26 +293,11 @@ public abstract class BaseServlet extends HttpServlet {
         return null;
     }
 
-    /**
-     * Gets the full URL before the part containing the path(s) specified in
-     * urlPatterns of the servlet.
-     *
-     * @param request
-     * @return protocol://servername/contextPath
-     */
     protected static String getContextURL(final HttpServletRequest request) {
         final StringBuffer full = request.getRequestURL();
         return full.substring(0, full.length() - request.getServletPath().length());
     }
 
-    /**
-     * Get the conversion parameters. The parameter key value pairs are held in
-     * a semi-colon separated list ";" with a colon separating the individual
-     * key value pairs. E.g. "key1:val1;key2:val2;etc..."
-     *
-     * @param settings
-     * @return a String array in the form [key1, val1, key2, val2, etc...]
-     */
     protected static String[] getConversionParams(final String settings) {
         if (settings == null) {
             return null;
@@ -507,11 +313,6 @@ public abstract class BaseServlet extends HttpServlet {
         return result;
     }
 
-    /**
-     * Delete a folder and all of its contents.
-     *
-     * @param dirPath
-     */
     private static void deleteFolder(final File dirPath) {
         final File[] files = dirPath.listFiles();
         if (files != null) {
@@ -523,13 +324,4 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
     }
-
-    /**
-     * Update the progress of the conversion. This method is usually called
-     * after a poll from a client to the servlet.
-     *
-     * @param individual
-     */
-    abstract void updateProgress(final Individual individual);
-
 }

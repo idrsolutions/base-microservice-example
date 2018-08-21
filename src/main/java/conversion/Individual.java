@@ -24,18 +24,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Represents a file conversion request to the server. Allows storage of UUID's
- * for identification of clients which are requesting file conversions.
- * <p>
- * Information stores includes: UUID, isAlive flag, a timestamp, and the curent
- * state of the conversion ("queued", "processing", "done", ...). It can also
- * hold custom values to be passed to the user.
- */
 class Individual {
 
     public final String uuid;
-    public boolean isAlive = false;
+    public boolean isAlive = true;
     public String outputDir = null;
     final long timestamp;
     public String state;
@@ -43,25 +35,17 @@ class Individual {
 
     private final HashMap<String, String> customValues = new HashMap<>();
 
-    /**
-     * Create individual with a specific UUID.
-     *
-     * @param uuid
-     */
     Individual(final String uuid) {
         this.uuid = uuid;
         timestamp = new Date().getTime();
         state = "queued";
     }
+    
+    void doError(int errorCode) {
+        this.state = "error";
+        this.errorCode = String.valueOf(errorCode);
+    }
 
-    /**
-     * Get a JSON string representing the current state of this individual. JSON
-     * string holds the current state of the conversion, the error code (if it
-     * exists), as well as any custom key value pairs set though 
-     * {@link Individual#setValue(String, String) }
-     *
-     * @return a JSON string representing this individuals state
-     */
     String toJsonString() {
         final StringBuilder json = new StringBuilder();
         json.append("{\"state\":\"").append(state).append("\"")
@@ -76,13 +60,6 @@ class Individual {
         return json.toString();
     }
 
-    /**
-     * Adds a key value pair to he individual to pass to the client the next
-     * time the client polls the server.
-     *
-     * @param key
-     * @param value
-     */
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
     }
