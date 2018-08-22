@@ -223,7 +223,7 @@ public abstract class BaseServlet extends HttpServlet {
 
     /**
      * This method converts a file and writes it to the output directory under
-     * the Individuals UUID.
+     * the Individual's UUID.
      *
      * @param individual Internal representation of individual who made this
      * request
