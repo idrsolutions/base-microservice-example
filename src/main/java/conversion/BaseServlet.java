@@ -38,21 +38,13 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final String INPUTPATH = "../docroot/input/";
     private static final String OUTPUTPATH = "../docroot/output/";
-    
+
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
     private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
-    
-    class QueueItem {
-        Individual individual;
-        Map<String, String[]> params;
-        File inputFile;
-        File outputDir;
-        String contextUrl;
-    }
 
     private static void doError(final HttpServletResponse response, final String error, final int status) {
         response.setContentType("application/json");
@@ -217,7 +209,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
-        
+
         String url = request.getParameter("url");
         if (url == null) {
             doError(response, "No url given", 400);
@@ -229,12 +221,12 @@ public abstract class BaseServlet extends HttpServlet {
         if (filename == null) {
             filename = "document.pdf";
         }
-        
+
         // To allow use in lambda function.
         final String finalFilename = filename;
         final String contextUrl = getContextURL(request);
         final Map<String, String[]> parameterMap = request.getParameterMap();
-        
+
         downloadQueue.submit(() -> {
             File inputFile;
             try {
@@ -244,42 +236,37 @@ public abstract class BaseServlet extends HttpServlet {
                 individual.doError(1200);
                 return;
             }
-            
-            final File outputDir = createOutputDirectory(individual.uuid);            
+
+            final File outputDir = createOutputDirectory(individual.uuid);
             addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
         });
-        
+
         return true;
     }
 
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
         convertQueue.submit(() -> {
-            QueueItem item = new QueueItem();
-            item.individual = individual;
-            item.params = params;
-            item.inputFile = inputFile;
-            item.outputDir = outputDir;
-            item.contextUrl = contextUrl;
             try {
-                convert(item);
+                convert(individual, params, inputFile, outputDir, contextUrl);
             } finally {
                 individual.isAlive = false;
             }
         });
     }
 
-    abstract void convert(QueueItem conversionData);
-    
+    abstract void convert(Individual individual, Map<String, String[]> params,
+            File inputFile, File outputDir, String contextUrl);
+
     private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
         final File inputDir = createInputDirectory(individual.uuid);
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
-        try (final FileOutputStream output = new FileOutputStream(inputFile)) {            
+        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
             output.flush();
         }
-        
+
         return inputFile;
     }
 
