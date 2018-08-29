@@ -24,6 +24,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents a file conversion request to the server. Allows storage of UUID's
+ * for identification of clients which are requesting file conversions.
+ */
 class Individual {
 
     public final String uuid;
@@ -35,6 +39,11 @@ class Individual {
 
     private final HashMap<String, String> customValues = new HashMap<>();
 
+    /**
+     * Create individual with a specific UUID.
+     *
+     * @param uuid the uuid to identify this individual
+     */
     Individual(final String uuid) {
         this.uuid = uuid;
         timestamp = new Date().getTime();
@@ -46,6 +55,11 @@ class Individual {
         this.errorCode = String.valueOf(errorCode);
     }
 
+    /**
+     * Get a JSON string representing the current state of this individual.
+     *
+     * @return a JSON string representing this individuals state
+     */
     String toJsonString() {
         final StringBuilder json = new StringBuilder();
         json.append("{\"state\":\"").append(state).append("\"")
@@ -60,6 +74,13 @@ class Individual {
         return json.toString();
     }
 
+    /**
+     * Adds a key value pair to the individual to pass to the client the next
+     * time the client polls the server.
+     *
+     * @param key the key to be passed to the client
+     * @param value the value mapped to the key
+     */
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
     }
