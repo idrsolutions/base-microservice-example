@@ -31,7 +31,7 @@ import java.util.Map;
 class Individual {
 
     public final String uuid;
-    public boolean isAlive = false;
+    public boolean isAlive = true;
     public String outputDir = null;
     final long timestamp;
     public String state;
@@ -48,6 +48,11 @@ class Individual {
         this.uuid = uuid;
         timestamp = new Date().getTime();
         state = "queued";
+    }
+    
+    void doError(int errorCode) {
+        this.state = "error";
+        this.errorCode = String.valueOf(errorCode);
     }
 
     /**

@@ -20,6 +20,7 @@
  */
 package conversion;
 
+import conversion.utils.DownloadHelper;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -43,9 +44,12 @@ public abstract class BaseServlet extends HttpServlet {
     private static final String INPUTPATH = "../docroot/input/";
     private static final String OUTPUTPATH = "../docroot/output/";
 
+    private static final int NUM_DOWNLOAD_RETRIES = 2;
+
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
-    private final ExecutorService queue = Executors.newFixedThreadPool(5);
+    private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
+    private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
 
     /**
      * Set an HTTP error code and message to the given response.
@@ -56,11 +60,14 @@ public abstract class BaseServlet extends HttpServlet {
      * @throws IOException if the error message cannot be written to the
      * response.
      */
-    private static void doError(final HttpServletResponse response, final String error, final int status) throws IOException {
+    private static void doError(final HttpServletResponse response, final String error, final int status) {
         response.setContentType("application/json");
         response.setStatus(status);
         try (final PrintWriter out = response.getWriter()) {
             out.println("{\"error\":\"" + error + "\"}");
+        } catch (final IOException e) {
+            e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
     }
 
@@ -89,8 +96,6 @@ public abstract class BaseServlet extends HttpServlet {
             doError(response, "Unknown uuid: " + uuidStr, 404);
             return;
         }
-
-        updateProgress(individual);
 
         response.setContentType("application/json");
         try (final PrintWriter out = response.getWriter()) {
@@ -133,92 +138,166 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        try {
-            allowCrossOrigin(response);
+        allowCrossOrigin(response);
 
-            final String uuidStr = UUID.randomUUID().toString();
-            final Individual individual = new Individual(uuidStr);
+        final String uuidStr = UUID.randomUUID().toString();
+        final Individual individual = new Individual(uuidStr);
 
-            imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
+        imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
 
-            imap.put(uuidStr, individual);
+        final String inputType = request.getParameter("input");
+        if (inputType == null) {
+            doError(response, "Missing input type", 400);
+            return;
+        } else {
 
-            individual.isAlive = true;
+            switch (inputType) {
+                case "upload":
+                    if (!handleFileFromRequest(individual, request, response)) {
+                        return;
+                    }
+                    break;
 
-            final Part filePart = request.getPart("file");
-            if (filePart == null) {
-                imap.remove(uuidStr);
-                doError(response, "Missing file", 400);
-                return;
+                case "download":
+                    if (!handleFileFromUrl(individual, request, response)) {
+                        return;
+                    }
+                    break;
+
+                default:
+                    doError(response, "Unrecognised input type", 400);
+                    return;
             }
+        }
 
-            final byte[] fileBytes = new byte[(int) filePart.getSize()];
-            final InputStream fileContent = filePart.getInputStream();
-            fileContent.read(fileBytes);
-            fileContent.close();
+        imap.put(uuidStr, individual);
 
-            String fileName = getFileName(filePart);
-            if (fileName == null) {
-                imap.remove(uuidStr);
-                doError(response, "Missing file name", 500); // Would this ever occur?
-                return;
-            }
-            final int extPos = fileName.lastIndexOf('.');
-            // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
-            final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
-            final String ext = fileName.substring(extPos + 1);
-
-            fileName = fileNameWithoutExt + '.' + ext;
-
-            final String userInputDirPath = INPUTPATH + uuidStr;
-            final File inputDir = new File(userInputDirPath);
-            if (!inputDir.exists()) {
-                inputDir.mkdirs();
-            }
-
-            //Creates the output dir based on session ID
-            final String userOutputDirPath = OUTPUTPATH + uuidStr;
-            final File outputDir = new File(userOutputDirPath);
-            if (outputDir.exists()) {
-                deleteFolder(outputDir);
-            }
-            outputDir.mkdirs();
-
-            final File inputFile = new File(userInputDirPath + "/" + fileName);
-
-            try (final FileOutputStream output = new FileOutputStream(inputFile)) {
-                output.write(fileBytes);
-                output.flush();
-            } catch (final IOException e) {
-                e.printStackTrace();
-                LOG.severe(e.getMessage());
-                imap.remove(uuidStr);
-                doError(response, "Internal error", 500); // Failed to save file to disk
-                return;
-            }
-
-            final Map<String, String[]> parameterMap = request.getParameterMap();
-            final String name = fileName;
-
-            queue.submit(() -> {
-                try {
-                    convert(individual, parameterMap, name, inputDir.getAbsolutePath(),
-                            outputDir.getAbsolutePath(), fileNameWithoutExt, ext,
-                            getContextURL(request));
-                } finally {
-                    individual.isAlive = false;
-                }
-            });
-
-            response.setContentType("application/json");
-            try (final PrintWriter out = response.getWriter()) {
-                out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
-            }
-
-        } catch (final ServletException | IOException e) {
+        response.setContentType("application/json");
+        try (final PrintWriter out = response.getWriter()) {
+            out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
+        } catch (final IOException e) {
             e.printStackTrace();
             LOG.severe(e.getMessage());
         }
+    }
+
+    private static String sanitizeFileName(final String fileName) {
+        final int extPos = fileName.lastIndexOf('.');
+        // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
+        final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
+        final String ext = fileName.substring(extPos + 1);
+
+        return fileNameWithoutExt + '.' + ext;
+    }
+
+    private static File createInputDirectory(final String uuid) {
+        final String userInputDirPath = INPUTPATH + uuid;
+        final File inputDir = new File(userInputDirPath);
+        if (!inputDir.exists()) {
+            inputDir.mkdirs();
+        }
+        return inputDir;
+    }
+
+    private static File createOutputDirectory(final String uuid) {
+        final String userOutputDirPath = OUTPUTPATH + uuid;
+        final File outputDir = new File(userOutputDirPath);
+        if (outputDir.exists()) {
+            deleteFolder(outputDir);
+        }
+        outputDir.mkdirs();
+        return outputDir;
+    }
+
+    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+        final Part filePart;
+        try {
+            filePart = request.getPart("file");
+        } catch (IOException e) {
+            doError(response, "Error handling file", 500);
+            return false;
+        } catch (ServletException e) {
+            doError(response, "Missing file", 400);
+            return false;
+        }
+
+        if (filePart == null) {
+            doError(response, "Missing file", 400);
+            return false;
+        }
+
+        final String originalFileName = getFileName(filePart);
+        if (originalFileName == null) {
+            doError(response, "Missing file name", 500); // Would this ever occur?
+            return false;
+        }
+
+        final File inputFile;
+        try {
+            final InputStream fileContent = filePart.getInputStream();
+            final byte[] fileBytes = new byte[(int) filePart.getSize()];
+            fileContent.read(fileBytes);
+            fileContent.close();
+            inputFile = outputFile(originalFileName, individual, fileBytes);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            LOG.severe(e.getMessage());
+            doError(response, "Internal error", 500); // Failed to save file to disk
+            return false;
+        }
+
+        final File outputDir = createOutputDirectory(individual.uuid);
+
+        addToQueue(individual, request.getParameterMap(), inputFile, outputDir, getContextURL(request));
+
+        return true;
+    }
+
+    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+
+        String url = request.getParameter("url");
+        if (url == null) {
+            doError(response, "No url given", 400);
+            return false;
+        }
+        // This does not need to be asynchronous
+        String filename = DownloadHelper.getFileNameFromUrl(url);
+        // In case a filename cannot be parsed from the url.
+        if (filename == null) {
+            filename = "document.pdf";
+        }
+
+        // To allow use in lambda function.
+        final String finalFilename = filename;
+        final String contextUrl = getContextURL(request);
+        final Map<String, String[]> parameterMap = request.getParameterMap();
+
+        downloadQueue.submit(() -> {
+            File inputFile;
+            try {
+                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES);
+                inputFile = outputFile(finalFilename, individual, fileBytes);
+            } catch (IOException e) {
+                individual.doError(1200);
+                return;
+            }
+
+            final File outputDir = createOutputDirectory(individual.uuid);
+            addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
+        });
+
+        return true;
+    }
+
+    private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
+            final File outputDir, final String contextUrl) {
+        convertQueue.submit(() -> {
+            try {
+                convert(individual, params, inputFile, outputDir, contextUrl);
+            } finally {
+                individual.isAlive = false;
+            }
+        });
     }
 
     /**
@@ -237,9 +316,20 @@ public abstract class BaseServlet extends HttpServlet {
      * @param contextURL The url from the protocol up to the servlet url
      * pattern.
      */
-    abstract void convert(final Individual individual, final Map<String, String[]> parameterMap, final String fileName,
-            final String inputDirectory, final String outputDirectory,
-            final String fileNameWithoutExt, final String ext, final String contextURL);
+    abstract void convert(Individual individual, Map<String, String[]> params,
+            File inputFile, File outputDir, String contextUrl);
+
+    private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
+        final File inputDir = createInputDirectory(individual.uuid);
+        final File inputFile = new File(inputDir, sanitizeFileName(filename));
+
+        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
+            output.write(fileBytes);
+            output.flush();
+        }
+      
+        return inputFile;
+    }
 
     /**
      * Get the filename of the file contained in this request part.
@@ -307,12 +397,4 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
     }
-
-    /**
-     * Update the progress of the conversion.
-     *
-     * @param individual the individual object for this client
-     */
-    abstract void updateProgress(final Individual individual);
-
 }

@@ -47,8 +47,7 @@ public class ZipHelper {
 
         try (
                 final FileOutputStream fileWriter = new FileOutputStream(zipOut);
-                final ZipOutputStream zip = new ZipOutputStream(fileWriter)
-            ) {
+                final ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
             addFolderToZip("", srcFolder, zip);
             zip.flush();
             fileWriter.flush();
