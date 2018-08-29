@@ -28,9 +28,9 @@ public class DownloadHelper {
     /**
      * Gets array of file bytes from a url.
      *
-     * @param strUrl
+     * @param strUrl the url to get the file from
      * @return the bytes downloaded from the url, null if no bytes downloaded.
-     * @throws IOException
+     * @throws IOException when unable to fetch the file
      */
     public static byte[] getFileFromUrl(final String strUrl) throws IOException {
 
@@ -62,9 +62,10 @@ public class DownloadHelper {
      * Gets array of bytes from url. If after n retries the bytes cannot be
      * retrieved the method returns null.
      *
-     * @param url
-     * @param retries
+     * @param url the url to get the file from
+     * @param retries the number of retries to attempt before giving up
      * @return bytes downloaded from the url, null on error.
+     * @throws IOException when unable to fetch the file
      */
     public static byte[] getFileFromUrl(final String url, int retries) throws IOException {
         while (retries > 0) {
@@ -85,10 +86,10 @@ public class DownloadHelper {
     }
     
     /**
-     * Extract the filename from the url.
+     * Attempt to extract a filename from the url.
      *
-     * @param url
-     * @return
+     * @param url the url to extract the filename from
+     * @return the filename if it is possible to extract, null otherwise
      */
     public static String getFileNameFromUrl(String url) {
 

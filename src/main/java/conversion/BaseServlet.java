@@ -119,7 +119,7 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Allow cross origin requests according to the CORS standard.
      *
-     * @param response
+     * @param response the response object to the request from the client
      */
     private void allowCrossOrigin(final HttpServletResponse response) {
         response.addHeader("Access-Control-Allow-Origin", "*");
@@ -132,8 +132,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#convert(Individual, Map, String, String, String, String,
-     * String, String)
+     * @see BaseServlet#convert(Individual, Map, File, File, String)
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
@@ -181,6 +180,13 @@ public abstract class BaseServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Sanitize the file name by removing all none url/filepath friendly
+     * characters.
+     *
+     * @param fileName the filename to sanitize
+     * @return the sanitized filename
+     */
     private static String sanitizeFileName(final String fileName) {
         final int extPos = fileName.lastIndexOf('.');
         // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
@@ -190,6 +196,12 @@ public abstract class BaseServlet extends HttpServlet {
         return fileNameWithoutExt + '.' + ext;
     }
 
+    /**
+     * Create the input directory for the clients file.
+     *
+     * @param uuid the uuid to use to create the directory
+     * @return the input directory
+     */
     private static File createInputDirectory(final String uuid) {
         final String userInputDirPath = INPUTPATH + uuid;
         final File inputDir = new File(userInputDirPath);
@@ -199,6 +211,12 @@ public abstract class BaseServlet extends HttpServlet {
         return inputDir;
     }
 
+    /**
+     * Create the output directory to store the converted pdf at.
+     *
+     * @param uuid the uuid to use to create the output directory
+     * @return the output directory
+     */
     private static File createOutputDirectory(final String uuid) {
         final String userOutputDirPath = OUTPUTPATH + uuid;
         final File outputDir = new File(userOutputDirPath);
@@ -209,6 +227,17 @@ public abstract class BaseServlet extends HttpServlet {
         return outputDir;
     }
 
+    /**
+     * Handle and convert file uploaded in the request.
+     * <p>
+     * This method blocks until the file is initially processed and exists when
+     * the conversion begins.
+     *
+     * @param individual the individual associated with this conversion
+     * @param request the request for this conversion
+     * @param response the response object for the request
+     * @return true on success, false on failure
+     */
     private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
         final Part filePart;
         try {
@@ -253,6 +282,17 @@ public abstract class BaseServlet extends HttpServlet {
         return true;
     }
 
+    /**
+     * Handle and convert a file located at a given url.
+     * <p>
+     * This method does not block when attempting to download the file from the 
+     * url.
+     *
+     * @param individual the individual associated with this conversion
+     * @param request the request for this conversion
+     * @param response the response object for the request
+     * @return true on initial success (url has been provided)
+     */
     private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
 
         String url = request.getParameter("url");
@@ -289,6 +329,15 @@ public abstract class BaseServlet extends HttpServlet {
         return true;
     }
 
+    /**
+     * Add a conversion task to the thread queue.
+     *
+     * @param individual the individual belonging to this conversion
+     * @param params the parameter map from the request
+     * @param inputFile the input file to convert
+     * @param outputDir the output directory to convert to
+     * @param contextUrl the context url of the servlet
+     */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
         convertQueue.submit(() -> {
@@ -319,6 +368,15 @@ public abstract class BaseServlet extends HttpServlet {
     abstract void convert(Individual individual, Map<String, String[]> params,
             File inputFile, File outputDir, String contextUrl);
 
+    /**
+     * Write the given file bytes to the output directory under filename.
+     *
+     * @param filename the filename to output to
+     * @param individual the individual that began the conversion request
+     * @param fileBytes the bytes to be written.
+     * @return the created file
+     * @throws IOException on file not being writable
+     */
     private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
         final File inputDir = createInputDirectory(individual.uuid);
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
@@ -327,7 +385,7 @@ public abstract class BaseServlet extends HttpServlet {
             output.write(fileBytes);
             output.flush();
         }
-      
+
         return inputFile;
     }
 
