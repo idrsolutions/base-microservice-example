@@ -28,7 +28,7 @@ import java.util.Map;
  * Represents a file conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
  */
-class Individual {
+public class Individual {
 
     public final String uuid;
     public boolean isAlive = true;
@@ -60,7 +60,7 @@ class Individual {
      *
      * @return a JSON string representing this individuals state
      */
-    String toJsonString() {
+    public String toJsonString() {
         final StringBuilder json = new StringBuilder();
         json.append("{\"state\":\"").append(state).append("\"")
                 .append(errorCode != null ? ",\"errorCode\":" + errorCode : "");
