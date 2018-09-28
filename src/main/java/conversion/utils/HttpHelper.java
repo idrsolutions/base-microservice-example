@@ -34,11 +34,12 @@ import java.util.logging.Logger;
  * Static collection of methods to help with sending http requests.
  */
 public class HttpHelper {
-    
+
     private static Logger LOG = Logger.getLogger(HttpHelper.class.getName());
-    
+    private static int MaxRetries = 1;
+
     /**
-     * Tries to send individual json data to the callbackUrl provided by the 
+     * Tries to send individual json data to the callbackUrl provided by the
      * user when the file is submitted.
      *
      * @param callbackUrl
@@ -49,7 +50,7 @@ public class HttpHelper {
      */
     public static int contactCallback(String callbackUrl, Individual individual) throws MalformedURLException, IOException {
         final URL callback = new URL(callbackUrl);
-        
+
         final HttpURLConnection connection = (HttpURLConnection) callback.openConnection();
 
         connection.setRequestMethod("POST");
@@ -72,26 +73,32 @@ public class HttpHelper {
 
         return connection.getResponseCode();
     }
-    
+
     /**
      * This method handles the process of sending the callback data and handles
-     * any failed attempts.
-     * 
+     * any failed attempts. It will retry once every 10 seconds until it reaches
+     * the MaxRetries, this value is set to 1 by default.
+     *
      * @param callbackUrl The URL which will receive the json data
      * @param individual The data to be sent to the callbackUrl
      */
     public static void sendCallback(String callbackUrl, Individual individual) {
         try {
             int resCode = contactCallback(callbackUrl, individual);
+            int currentRetries = 1;
 
-            if (resCode != HttpURLConnection.HTTP_OK) {
-                LOG.log(Level.WARNING, "Callback URL ''{0}'' returned http code: {1} on attempt no.1", new Object[]{callbackUrl, Integer.toString(resCode)});
+            while (resCode != HttpURLConnection.HTTP_OK && !(currentRetries > MaxRetries)) {
+                LOG.log(Level.WARNING, "Callback URL ''{0}'' returned http code: {1} on attempt no.{2}", new Object[]{callbackUrl, Integer.toString(resCode), currentRetries});
+
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    LOG.info("Callback Retry interupted");
+                }
 
                 resCode = contactCallback(callbackUrl, individual);
 
-                if (resCode != HttpURLConnection.HTTP_OK) {
-                    LOG.log(Level.WARNING, "Callback URL ''{0}'' returned http code: {1} on attempt no.2", new Object[]{callbackUrl, Integer.toString(resCode)});
-                }
+                currentRetries++;
             }
 
         } catch (IOException e) {

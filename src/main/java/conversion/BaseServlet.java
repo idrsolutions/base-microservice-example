@@ -52,7 +52,7 @@ public abstract class BaseServlet extends HttpServlet {
 
     private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
-    
+
     /**
      * Set an HTTP error code and message to the given response.
      *
@@ -287,7 +287,7 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Handle and convert a file located at a given url.
      * <p>
-     * This method does not block when attempting to download the file from the 
+     * This method does not block when attempting to download the file from the
      * url.
      *
      * @param individual the individual associated with this conversion
@@ -346,15 +346,15 @@ public abstract class BaseServlet extends HttpServlet {
             try {
                 final Map<String, String[]> paramsCopy = new HashMap();
                 paramsCopy.putAll(params);
-                
+
                 convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
-                
+
                 final String callbackUrl = parameterToString(paramsCopy, "callbackUrl");
-                
+
                 if (!callbackUrl.equals("")) {
                     HttpHelper.sendCallback(callbackUrl, individual);
                 }
-                
+
             } finally {
                 individual.isAlive = false;
             }
@@ -467,44 +467,42 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
     }
-    
-        
+
     /**
      * Get the value of a key from the parameter map and return as a String
-     * instead of a String array. By default the concatenated string is 
-     * delimited by spaces. It will return an empty string is there is
-     * no value.
-     * 
+     * instead of a String array. By default the concatenated string is
+     * delimited by spaces. It will return an empty string is there is no value.
+     *
      * @param parameters A Map of the Request parameters
      * @param key The key used to access the parameter value
-     * @return A concatenated String of the value from the parameter map or an 
+     * @return A concatenated String of the value from the parameter map or an
      * empty string if there is no value.
      */
     private static String parameterToString(final Map<String, String[]> parameters, final String key) {
         return parameterToString(parameters, key, " ");
     }
-    
+
     /**
      * Get the value of a key from the parameter map and return as a String
-     * instead of a String array. It will return an empty string is there is
-     * no value.
-     * 
+     * instead of a String array. It will return an empty string is there is no
+     * value.
+     *
      * @param parameters A Map of the Request parameters
      * @param key The key used to access the parameter value
      * @param delimiter The delimiter used in the output string
-     * @return A concatenated String of the value from the parameter map or an 
+     * @return A concatenated String of the value from the parameter map or an
      * empty string if there is no value.
      */
     private static String parameterToString(final Map<String, String[]> parameters, final String key, final String delimiter) {
         String returnString = "";
-        
+
         for (String x : parameters.get(key)) {
             returnString += x + delimiter;
         }
-        
+
         //Remove the final delimiter
         returnString = returnString.substring(0, returnString.length() - 1);
-        
+
         return returnString;
     }
 }
