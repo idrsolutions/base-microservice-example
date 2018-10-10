@@ -20,13 +20,14 @@
  */
 package conversion.utils;
 
-import conversion.Individual;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,20 +36,20 @@ import java.util.logging.Logger;
  */
 public class HttpHelper {
 
-    private static Logger LOG = Logger.getLogger(HttpHelper.class.getName());
-    private static int MaxRetries = 1;
+    private final static Logger LOG = Logger.getLogger(HttpHelper.class.getName());
+    public static int MaxRetries = 3;
 
     /**
-     * Tries to send individual json data to the callbackUrl provided by the
+     * Tries to send json data to the callbackUrl provided by the
      * user when the file is submitted.
      *
-     * @param callbackUrl
-     * @param individual
+     * @param callbackUrl The URL which will receive the json data
+     * @param jsonData The data to be sent to the callbackUrl
      * @return HTTP response code
      * @throws MalformedURLException
      * @throws IOException
      */
-    public static int contactCallback(String callbackUrl, Individual individual) throws MalformedURLException, IOException {
+    public static int contactCallback(final String callbackUrl, final String jsonData) throws MalformedURLException, IOException {
         final URL callback = new URL(callbackUrl);
 
         final HttpURLConnection connection = (HttpURLConnection) callback.openConnection();
@@ -59,16 +60,11 @@ public class HttpHelper {
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Accept", "application/json");
 
-        final String outputString = individual.toJsonString();
-
-        final byte[] outputBytes = outputString.getBytes("UTF-8");
+        final byte[] outputBytes = jsonData.getBytes("UTF-8");
         connection.setFixedLengthStreamingMode(outputBytes.length);
 
         try (OutputStream os = connection.getOutputStream(); OutputStreamWriter wr = new OutputStreamWriter(os)) {
-            wr.write(outputString);
-            wr.flush();
-            wr.close();
-            os.close();
+            wr.write(jsonData);
         }
 
         return connection.getResponseCode();
@@ -77,32 +73,25 @@ public class HttpHelper {
     /**
      * This method handles the process of sending the callback data and handles
      * any failed attempts. It will retry once every 10 seconds until it reaches
-     * the MaxRetries, this value is set to 1 by default.
+     * the MaxRetries, this value is set to 3 by default.
      *
      * @param callbackUrl The URL which will receive the json data
-     * @param individual The data to be sent to the callbackUrl
+     * @param jsonData The data to be sent to the callbackUrl
+     * @param ses The executor to add in delays between url calls
+     * @param currentRetries The current count of retries
      */
-    public static void sendCallback(String callbackUrl, Individual individual) {
+    public static void sendCallback(final String callbackUrl, final String jsonData, final ScheduledExecutorService ses, final int currentRetries) {
         try {
-            int resCode = contactCallback(callbackUrl, individual);
-            int currentRetries = 1;
+            int resCode = contactCallback(callbackUrl, jsonData);
 
-            while (resCode != HttpURLConnection.HTTP_OK && !(currentRetries > MaxRetries)) {
+            if (resCode != HttpURLConnection.HTTP_OK) {
                 LOG.log(Level.WARNING, "Callback URL ''{0}'' returned http code: {1} on attempt no.{2}", new Object[]{callbackUrl, Integer.toString(resCode), currentRetries});
 
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    LOG.info("Callback Retry interupted");
+                if (!(currentRetries >= MaxRetries)) {
+                    ses.schedule(() -> sendCallback(callbackUrl, jsonData, ses, currentRetries + 1), 10, TimeUnit.SECONDS);
                 }
-
-                resCode = contactCallback(callbackUrl, individual);
-
-                currentRetries++;
             }
-
         } catch (IOException e) {
-            e.printStackTrace();
             LOG.severe(e.getMessage());
         }
     }

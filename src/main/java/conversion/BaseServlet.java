@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 /**
@@ -48,10 +49,13 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
+    private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
+
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
-    private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
+    private final ExecutorService convertQueue = Executors.newFixedThreadPool(PCOUNT);
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
+    private final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
     /**
      * Set an HTTP error code and message to the given response.
@@ -343,18 +347,20 @@ public abstract class BaseServlet extends HttpServlet {
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
         convertQueue.submit(() -> {
+            final Map<String, String[]> paramsCopy = new HashMap();
+            paramsCopy.putAll(params);
             try {
-                final Map<String, String[]> paramsCopy = new HashMap();
-                paramsCopy.putAll(params);
-
                 convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
 
-                final String callbackUrl = parameterToString(paramsCopy, "callbackUrl");
+                final String[] rawParam = paramsCopy.get("callbackUrl");
 
-                if (!callbackUrl.equals("")) {
-                    HttpHelper.sendCallback(callbackUrl, individual);
+                if (rawParam != null) {
+                    final String callbackUrl = String.join(" ", rawParam);
+
+                    if (!callbackUrl.equals("")) {
+                        callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
+                    }
                 }
-
             } finally {
                 individual.isAlive = false;
             }
@@ -466,43 +472,5 @@ public abstract class BaseServlet extends HttpServlet {
                 file.delete();
             }
         }
-    }
-
-    /**
-     * Get the value of a key from the parameter map and return as a String
-     * instead of a String array. By default the concatenated string is
-     * delimited by spaces. It will return an empty string is there is no value.
-     *
-     * @param parameters A Map of the Request parameters
-     * @param key The key used to access the parameter value
-     * @return A concatenated String of the value from the parameter map or an
-     * empty string if there is no value.
-     */
-    private static String parameterToString(final Map<String, String[]> parameters, final String key) {
-        return parameterToString(parameters, key, " ");
-    }
-
-    /**
-     * Get the value of a key from the parameter map and return as a String
-     * instead of a String array. It will return an empty string is there is no
-     * value.
-     *
-     * @param parameters A Map of the Request parameters
-     * @param key The key used to access the parameter value
-     * @param delimiter The delimiter used in the output string
-     * @return A concatenated String of the value from the parameter map or an
-     * empty string if there is no value.
-     */
-    private static String parameterToString(final Map<String, String[]> parameters, final String key, final String delimiter) {
-        String returnString = "";
-
-        for (String x : parameters.get(key)) {
-            returnString += x + delimiter;
-        }
-
-        //Remove the final delimiter
-        returnString = returnString.substring(0, returnString.length() - 1);
-
-        return returnString;
     }
 }
