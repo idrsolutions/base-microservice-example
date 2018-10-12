@@ -346,21 +346,13 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
+        final Map<String, String[]> paramsCopy = new HashMap();
+        paramsCopy.putAll(params);
+
         convertQueue.submit(() -> {
-            final Map<String, String[]> paramsCopy = new HashMap();
-            paramsCopy.putAll(params);
             try {
                 convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
-
-                final String[] rawParam = paramsCopy.get("callbackUrl");
-
-                if (rawParam != null) {
-                    final String callbackUrl = String.join(" ", rawParam);
-
-                    if (!callbackUrl.equals("")) {
-                        callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
-                    }
-                }
+                handleCallback(individual.toJsonString(), paramsCopy);
             } finally {
                 individual.isAlive = false;
             }
@@ -421,6 +413,25 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return null;
+    }
+
+    /**
+     * Checks if the callbackUrl parameter was included in the request, if so it
+     * will queue the callback into the callbackQueue.
+     *
+     * @param jsonData the jsonData that is sent to the URL
+     * @param params the request parameters
+     */
+    private void handleCallback(final String jsonData, final Map<String, String[]> params) {
+        final String[] rawParam = params.get("callbackUrl");
+
+        if (rawParam != null) {
+            final String callbackUrl = String.join(" ", rawParam);
+
+            if (!callbackUrl.equals("")) {
+                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, jsonData, callbackQueue, 1));
+            }
+        }
     }
 
     /**
