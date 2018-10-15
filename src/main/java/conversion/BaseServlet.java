@@ -346,13 +346,12 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
-        final Map<String, String[]> paramsCopy = new HashMap();
-        paramsCopy.putAll(params);
+        final Map<String, String[]> paramsCopy = new HashMap<>(params);
 
         convertQueue.submit(() -> {
             try {
                 convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
-                handleCallback(individual.toJsonString(), paramsCopy);
+                handleCallback(individual, paramsCopy);
             } finally {
                 individual.isAlive = false;
             }
@@ -422,14 +421,14 @@ public abstract class BaseServlet extends HttpServlet {
      * @param jsonData the jsonData that is sent to the URL
      * @param params the request parameters
      */
-    private void handleCallback(final String jsonData, final Map<String, String[]> params) {
+    private void handleCallback(final Individual individual, final Map<String, String[]> params) {
         final String[] rawParam = params.get("callbackUrl");
 
         if (rawParam != null) {
             final String callbackUrl = String.join(" ", rawParam);
 
             if (!callbackUrl.equals("")) {
-                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, jsonData, callbackQueue, 1));
+                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
             }
         }
     }
