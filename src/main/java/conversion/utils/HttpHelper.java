@@ -40,8 +40,8 @@ public class HttpHelper {
     public static int MaxRetries = 3;
 
     /**
-     * Tries to send json data to the callbackUrl provided by the
-     * user when the file is submitted.
+     * Tries to send json data to the callbackUrl provided by the user when the
+     * file is submitted.
      *
      * @param callbackUrl The URL which will receive the json data
      * @param jsonData The data to be sent to the callbackUrl
@@ -87,7 +87,7 @@ public class HttpHelper {
             if (resCode != HttpURLConnection.HTTP_OK) {
                 LOG.log(Level.WARNING, "Callback URL ''{0}'' returned http code: {1} on attempt no.{2}", new Object[]{callbackUrl, Integer.toString(resCode), currentRetries});
 
-                if (!(currentRetries >= MaxRetries)) {
+                if (currentRetries < MaxRetries) {
                     ses.schedule(() -> sendCallback(callbackUrl, jsonData, ses, currentRetries + 1), 10, TimeUnit.SECONDS);
                 }
             }

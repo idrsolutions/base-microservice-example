@@ -424,8 +424,8 @@ public abstract class BaseServlet extends HttpServlet {
     private void handleCallback(final Individual individual, final Map<String, String[]> params) {
         final String[] rawParam = params.get("callbackUrl");
 
-        if (rawParam != null) {
-            final String callbackUrl = String.join(" ", rawParam);
+        if (rawParam != null && rawParam.length > 0) {
+            final String callbackUrl = rawParam[0];
 
             if (!callbackUrl.equals("")) {
                 callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
