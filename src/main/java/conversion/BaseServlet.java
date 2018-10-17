@@ -21,15 +21,18 @@
 package conversion;
 
 import conversion.utils.DownloadHelper;
+import conversion.utils.HttpHelper;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 /**
@@ -46,10 +49,13 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
+    private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
+
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
-    private final ExecutorService convertQueue = Executors.newFixedThreadPool(5);
+    private final ExecutorService convertQueue = Executors.newFixedThreadPool(PCOUNT);
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
+    private final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
     /**
      * Set an HTTP error code and message to the given response.
@@ -285,7 +291,7 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Handle and convert a file located at a given url.
      * <p>
-     * This method does not block when attempting to download the file from the 
+     * This method does not block when attempting to download the file from the
      * url.
      *
      * @param individual the individual associated with this conversion
@@ -340,9 +346,12 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
+        final Map<String, String[]> paramsCopy = new HashMap<>(params);
+
         convertQueue.submit(() -> {
             try {
-                convert(individual, params, inputFile, outputDir, contextUrl);
+                convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
+                handleCallback(individual, paramsCopy);
             } finally {
                 individual.isAlive = false;
             }
@@ -403,6 +412,25 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return null;
+    }
+
+    /**
+     * Checks if the callbackUrl parameter was included in the request, if so it
+     * will queue the callback into the callbackQueue.
+     *
+     * @param jsonData the jsonData that is sent to the URL
+     * @param params the request parameters
+     */
+    private void handleCallback(final Individual individual, final Map<String, String[]> params) {
+        final String[] rawParam = params.get("callbackUrl");
+
+        if (rawParam != null && rawParam.length > 0) {
+            final String callbackUrl = rawParam[0];
+
+            if (!callbackUrl.equals("")) {
+                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
+            }
+        }
     }
 
     /**
