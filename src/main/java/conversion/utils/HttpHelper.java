@@ -46,8 +46,8 @@ public class HttpHelper {
      * @param callbackUrl The URL which will receive the json data
      * @param jsonData The data to be sent to the callbackUrl
      * @return HTTP response code
-     * @throws MalformedURLException
-     * @throws IOException
+     * @throws MalformedURLException if URL provided is malformed
+     * @throws IOException if there is an issue sending the json data
      */
     public static int contactCallback(final String callbackUrl, final String jsonData) throws MalformedURLException, IOException {
         final URL callback = new URL(callbackUrl);
