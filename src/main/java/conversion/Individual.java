@@ -28,14 +28,14 @@ import java.util.Map;
  * Represents a file conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
  */
-class Individual {
+public class Individual {
 
     public final String uuid;
     public boolean isAlive = true;
-    public String outputDir = null;
     final long timestamp;
     public String state;
     public String errorCode;
+    public Object data;
 
     private final HashMap<String, String> customValues = new HashMap<>();
 

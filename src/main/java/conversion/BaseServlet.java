@@ -60,17 +60,27 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Set an HTTP error code and message to the given response.
      *
-     * @param response The response to send to the client
+     * @param response the HttpServletResponse object on which to send the response
      * @param error the error message to pass in the body of the client
      * @param status the HTTP status to set the response to
-     * @throws IOException if the error message cannot be written to the
      * response.
      */
-    private static void doError(final HttpServletResponse response, final String error, final int status) {
-        response.setContentType("application/json");
+    protected static void doError(final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
+        sendResponse(response, "{\"error\":\"" + error + "\"}");
+    }
+
+    /**
+     * Send a JSON response
+     *
+     * @param response the HttpServletResponse object on which to send the response
+     * @param content the JSON response to send
+     */
+    private static void sendResponse(final HttpServletResponse response, final String content) {
+        allowCrossOrigin(response);
+        response.setContentType("application/json");
         try (final PrintWriter out = response.getWriter()) {
-            out.println("{\"error\":\"" + error + "\"}");
+            out.println(content);
         } catch (final IOException e) {
             e.printStackTrace();
             LOG.severe(e.getMessage());
@@ -83,14 +93,10 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @throws IOException if the error message cannot be written to the
-     * response.
      * @see Individual#toJsonString()
      */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-
-        allowCrossOrigin(response);
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         final String uuidStr = request.getParameter("uuid");
         if (uuidStr == null) {
             doError(response, "No uuid provided", 404);
@@ -103,10 +109,7 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        response.setContentType("application/json");
-        try (final PrintWriter out = response.getWriter()) {
-            out.println(individual.toJsonString());
-        }
+        sendResponse(response, individual.toJsonString());
     }
 
     /**
@@ -127,7 +130,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param response the response object to the request from the client
      */
-    private void allowCrossOrigin(final HttpServletResponse response) {
+    private static void allowCrossOrigin(final HttpServletResponse response) {
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
         response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin");
@@ -143,47 +146,40 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        allowCrossOrigin(response);
-
-        final String uuidStr = UUID.randomUUID().toString();
-        final Individual individual = new Individual(uuidStr);
-
         imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
             doError(response, "Missing input type", 400);
             return;
-        } else {
+        }
 
-            switch (inputType) {
-                case "upload":
-                    if (!handleFileFromRequest(individual, request, response)) {
-                        return;
-                    }
-                    break;
+        final String uuidStr = UUID.randomUUID().toString();
+        final Individual individual = new Individual(uuidStr);
 
-                case "download":
-                    if (!handleFileFromUrl(individual, request, response)) {
-                        return;
-                    }
-                    break;
+        individual.data = request.getAttribute("data");
 
-                default:
-                    doError(response, "Unrecognised input type", 400);
+        switch (inputType) {
+            case "upload":
+                if (!handleFileFromRequest(individual, request, response)) {
                     return;
-            }
+                }
+                break;
+
+            case "download":
+                if (!handleFileFromUrl(individual, request, response)) {
+                    return;
+                }
+                break;
+
+            default:
+                doError(response, "Unrecognised input type", 400);
+                return;
         }
 
         imap.put(uuidStr, individual);
 
-        response.setContentType("application/json");
-        try (final PrintWriter out = response.getWriter()) {
-            out.println("{" + "\"uuid\":\"" + uuidStr + "\"}");
-        } catch (final IOException e) {
-            e.printStackTrace();
-            LOG.severe(e.getMessage());
-        }
+        sendResponse(response, "{" + "\"uuid\":\"" + uuidStr + "\"}");
     }
 
     /**
@@ -364,17 +360,14 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param individual Internal representation of individual who made this
      * request
-     * @param parameterMap the map of parameters from the request
-     * @param fileName the name of the file on disk
-     * @param inputDirectory the directory of the uploaded file
-     * @param outputDirectory the directory the converted file should be written
+     * @param params the map of parameters from the request
+     * @param inputFile the File to convert
+     * @param outputDir the directory the converted file should be written
      * to
-     * @param fileNameWithoutExt the filename without its extension
-     * @param ext the extension of the file name
-     * @param contextURL The url from the protocol up to the servlet url
+     * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
-    abstract void convert(Individual individual, Map<String, String[]> params,
+    protected abstract void convert(Individual individual, Map<String, String[]> params,
             File inputFile, File outputDir, String contextUrl);
 
     /**
@@ -418,7 +411,7 @@ public abstract class BaseServlet extends HttpServlet {
      * Checks if the callbackUrl parameter was included in the request, if so it
      * will queue the callback into the callbackQueue.
      *
-     * @param jsonData the jsonData that is sent to the URL
+     * @param individual the Individual that is sent to the URL
      * @param params the request parameters
      */
     private void handleCallback(final Individual individual, final Map<String, String[]> params) {
