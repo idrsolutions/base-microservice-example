@@ -146,7 +146,7 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        imap.entrySet().removeIf(entry -> entry.getValue().timestamp < new Date().getTime() - 86400000); // 24 hours
+        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - 86400000); // 24 hours
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -157,7 +157,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String uuidStr = UUID.randomUUID().toString();
         final Individual individual = new Individual(uuidStr);
 
-        individual.data = request.getAttribute("data");
+        individual.setCustomData(request.getAttribute("customData"));
 
         switch (inputType) {
             case "upload":
@@ -277,7 +277,7 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        final File outputDir = createOutputDirectory(individual.uuid);
+        final File outputDir = createOutputDirectory(individual.getUuid());
 
         addToQueue(individual, request.getParameterMap(), inputFile, outputDir, getContextURL(request));
 
@@ -324,7 +324,7 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
             }
 
-            final File outputDir = createOutputDirectory(individual.uuid);
+            final File outputDir = createOutputDirectory(individual.getUuid());
             addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
         });
 
@@ -349,7 +349,7 @@ public abstract class BaseServlet extends HttpServlet {
                 convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
                 handleCallback(individual, paramsCopy);
             } finally {
-                individual.isAlive = false;
+                individual.setAlive(false);
             }
         });
     }
@@ -380,7 +380,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @throws IOException on file not being writable
      */
     private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
-        final File inputDir = createInputDirectory(individual.uuid);
+        final File inputDir = createInputDirectory(individual.getUuid());
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
         try (final FileOutputStream output = new FileOutputStream(inputFile)) {
