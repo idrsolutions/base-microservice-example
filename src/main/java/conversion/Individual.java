@@ -28,14 +28,14 @@ import java.util.Map;
  * Represents a file conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
  */
-class Individual {
+public class Individual {
 
-    public final String uuid;
-    public boolean isAlive = true;
-    public String outputDir = null;
-    final long timestamp;
-    public String state;
-    public String errorCode;
+    private final String uuid;
+    private boolean isAlive = true;
+    private final long timestamp;
+    private String state;
+    private String errorCode;
+    private Object customData;
 
     private final HashMap<String, String> customValues = new HashMap<>();
 
@@ -50,7 +50,7 @@ class Individual {
         state = "queued";
     }
     
-    void doError(int errorCode) {
+    void doError(final int errorCode) {
         this.state = "error";
         this.errorCode = String.valueOf(errorCode);
     }
@@ -75,13 +75,111 @@ class Individual {
     }
 
     /**
-     * Adds a key value pair to the individual to pass to the client the next
-     * time the client polls the server.
+     * Adds a key value pair to the individual to pass to the client in GET
+     * requests and callbacks.
      *
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
+    }
+
+    /**
+     * Returns the unique identifier for this Individual
+     *
+     * @return the unique identifier for this Individual
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * Returns true if this conversion is queued or in progress, and false if the
+     * conversion has completed or thrown an error.
+     *
+     * @return if the conversion is alive
+     */
+    public boolean isAlive() {
+        return isAlive;
+    }
+
+    /**
+     * Set the alive state of the Individual. True if the conversion is queued or
+     * in progress, and false if the conversion has completed or thrown an error.
+     *
+     * @param alive the alive state of the Individual
+     */
+    public void setAlive(boolean alive) {
+        isAlive = alive;
+    }
+
+    /**
+     * Get the state of the Individual. This could be queued, processing,
+     * processed, or something else.
+     *
+     * @return the state of the Individual
+     */
+    public String getState() {
+        return state;
+    }
+
+    /**
+     * Sets the state of the Individual. This could be queued, processing,
+     * processed, or something else.
+     *
+     * @param state the state of the Individual
+     */
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    /**
+     * Gets the error code of the Individual (0 if not set). This is used
+     * when an error has occurred during processing. The error code should
+     * specify what went wrong.
+     *
+     * @return the error code of the Individual (0 if not set)
+     */
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    /**
+     * Set the error code of the Individual. This is used when an error has
+     * occurred during processing. The error code should specify what went
+     * wrong.
+     *
+     * @param errorCode the error code of the Individual
+     */
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    /**
+     * Get custom data stored in the Individual (null if not set)
+     *
+     * @return the custom data
+     */
+    public Object getCustomData() {
+        return customData;
+    }
+
+    /**
+     * Store custom data in the Individual
+     *
+     * @param customData the custom data to store
+     */
+    public void setCustomData(Object customData) {
+        this.customData = customData;
+    }
+
+    /**
+     * Gets the timestamp for when the Individual was created
+     *
+     * @return the timestamp for when the Individual was created
+     */
+    public long getTimestamp() {
+        return timestamp;
     }
 }
