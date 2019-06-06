@@ -18,13 +18,14 @@ package conversion.utils;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
  * Static collection of methods to help with downloading files from a url.
  */
 public class DownloadHelper {
-    
+
     /**
      * Gets array of file bytes from a url.
      *
@@ -33,6 +34,19 @@ public class DownloadHelper {
      * @throws IOException when unable to fetch the file
      */
     public static byte[] getFileFromUrl(final String strUrl) throws IOException {
+        return getFileFromUrl(strUrl, -1);
+    }
+
+    /**
+     * Gets array of file bytes from a url.
+     *
+     * @param strUrl the url to get the file from
+     * @param fileSizeLimit the maximum filesize before stopping the download
+     * @return the bytes downloaded from the url, null if no bytes downloaded.
+     * @throws IOException when unable to fetch the file or when the File size
+     * limit is reached
+     */
+    public static byte[] getFileFromUrl(final String strUrl, final long fileSizeLimit) throws IOException {
 
         final int bufferSize = 1024;
 
@@ -42,8 +56,14 @@ public class DownloadHelper {
 
         final byte[] buffer = new byte[bufferSize];
         int count = 0;
+        long fileSize = 0l;
 
         while ((count = input.read(buffer, 0, bufferSize)) != -1) {
+            fileSize += count;
+            if (fileSizeLimit > 0 && fileSize > fileSizeLimit) {
+                throw new IOException("File size limit reached");
+            }
+
             data.write(buffer, 0, count);
         }
 
@@ -57,9 +77,8 @@ public class DownloadHelper {
         throw new IOException();
     }
 
-    
     /**
-     * Gets array of bytes from url. If after n retries the bytes cannot be
+     * Gets array of bytes from url.If after n retries the bytes cannot be
      * retrieved the method returns null.
      *
      * @param url the url to get the file from
@@ -68,9 +87,24 @@ public class DownloadHelper {
      * @throws IOException when unable to fetch the file
      */
     public static byte[] getFileFromUrl(final String url, int retries) throws IOException {
+        return getFileFromUrl(url, -1, retries);
+    }
+
+    /**
+     * Gets array of bytes from url.If after n retries the bytes cannot be
+     * retrieved the method returns null.
+     *
+     * @param url the url to get the file from
+     * @param retries the number of retries to attempt before giving up
+     * @param fileSizeLimit the maximum filesize before stopping the download
+     * @return bytes downloaded from the url, null on error.
+     * @throws IOException when unable to fetch the file or when the File size
+     * limit is reached
+     */
+    public static byte[] getFileFromUrl(final String url, int retries, final long fileSizeLimit) throws IOException {
         while (retries > 0) {
             try {
-                byte[] bytes = getFileFromUrl(url);
+                byte[] bytes = getFileFromUrl(url, fileSizeLimit);
 
                 if (bytes == null) {
                     throw new IOException();
@@ -78,13 +112,34 @@ public class DownloadHelper {
 
                 return bytes;
             } catch (IOException e) {
-                retries--;
+                final String message = e.getMessage();
+                if (message != null && message.equalsIgnoreCase("File size limit reached")) {
+                    throw new IOException(message);
+                } else {
+                    retries--;
+                }
             }
         }
 
         throw new IOException();
     }
-    
+
+    /**
+     * Send a head HTTP request to find out the content-length for the file
+     * found at the specified url
+     *
+     * @param url the location of the file
+     * @return The content-length of the file
+     * @throws IOException when the connection fails to open or there is a
+     * protocol exception when setting the request method to HEAD
+     */
+    public static long getFileSizeFromUrl(final String url) throws IOException {
+        final URL fileUrl = new URL(url);
+        final HttpURLConnection connection = (HttpURLConnection) fileUrl.openConnection();
+        connection.setRequestMethod("HEAD");
+        return connection.getContentLengthLong();
+    }
+
     /**
      * Attempt to extract a filename from the url.
      *
@@ -106,11 +161,11 @@ public class DownloadHelper {
             name = url.substring(index, url.length());
         }
 
-        if (name.length() == 0) {
+        if (name != null && name.length() == 0) {
             name = null;
         }
 
         return name;
     }
-    
+
 }
