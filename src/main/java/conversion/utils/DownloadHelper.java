@@ -159,10 +159,10 @@ public class DownloadHelper {
         index = url.lastIndexOf("/") + 1;
         if (index > 0 && index < url.length()) {
             name = url.substring(index, url.length());
-        }
-
-        if (name != null && name.length() == 0) {
-            name = null;
+            
+            if (name.length() == 0) {
+                name = null;
+            }
         }
 
         return name;
