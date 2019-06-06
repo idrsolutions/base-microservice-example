@@ -91,7 +91,7 @@ public class DownloadHelper {
     }
 
     /**
-     * Gets array of bytes from url.If after n retries the bytes cannot be
+     * Gets array of bytes from url. If after n retries the bytes cannot be
      * retrieved the method returns null.
      *
      * @param url the url to get the file from
@@ -159,7 +159,7 @@ public class DownloadHelper {
         index = url.lastIndexOf("/") + 1;
         if (index > 0 && index < url.length()) {
             name = url.substring(index, url.length());
-            
+
             if (name.length() == 0) {
                 name = null;
             }
