@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
+import javax.naming.SizeLimitExceededException;
 
 /**
  * An extendable base for conversion microservices. Provides general
@@ -316,18 +317,20 @@ public abstract class BaseServlet extends HttpServlet {
             filename = "document.pdf";
         }
 
-        long fileSize;
-        try {
-            fileSize = DownloadHelper.getFileSizeFromUrl(url);
-        } catch (IOException e) {
-            doError(response, "Internal error", 500);
-            return false;
-        }
-
         final long fileSizeLimit = getFileSizeLimit(request);
-        if (fileSizeLimit > 0 && fileSize > fileSizeLimit) {
-            doError(response, "File size limit exceeded", 400);
-            return false;
+        if (fileSizeLimit > 0) {
+            long fileSize;
+            try {
+                fileSize = DownloadHelper.getFileSizeFromUrl(url);
+            } catch (IOException e) {
+                doError(response, "Internal error", 500);
+                return false;
+            }
+
+            if (fileSize > fileSizeLimit) {
+                doError(response, "File size limit exceeded", 400);
+                return false;
+            }
         }
 
         // To allow use in lambda function.
@@ -342,6 +345,9 @@ public abstract class BaseServlet extends HttpServlet {
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
                 individual.doError(1200);
+                return;
+            } catch (SizeLimitExceededException e) {
+                individual.doError(1210);
                 return;
             }
 
@@ -470,7 +476,7 @@ public abstract class BaseServlet extends HttpServlet {
         if (rawSizeLimit != null && rawSizeLimit instanceof Long) {
             return (long) rawSizeLimit;
         } else {
-            return -1l;
+            return -1L;
         }
     }
 
