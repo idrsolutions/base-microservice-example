@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
+import javax.naming.SizeLimitExceededException;
 
 /**
  * An extendable base for conversion microservices. Provides general
@@ -60,10 +61,10 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Set an HTTP error code and message to the given response.
      *
-     * @param response the HttpServletResponse object on which to send the response
+     * @param response the HttpServletResponse object on which to send the
+     * response
      * @param error the error message to pass in the body of the client
-     * @param status the HTTP status to set the response to
-     * response.
+     * @param status the HTTP status to set the response to response.
      */
     protected static void doError(final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
@@ -73,7 +74,8 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Send a JSON response
      *
-     * @param response the HttpServletResponse object on which to send the response
+     * @param response the HttpServletResponse object on which to send the
+     * response
      * @param content the JSON response to send
      */
     private static void sendResponse(final HttpServletResponse response, final String content) {
@@ -257,9 +259,15 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
+        final long fileSizeLimit = getFileSizeLimit(request);
+        if (fileSizeLimit > 0 && filePart.getSize() > fileSizeLimit) {
+            doError(response, "File size limit exceeded", 400);
+            return false;
+        }
+
         final String originalFileName = getFileName(filePart);
         if (originalFileName == null) {
-            doError(response, "Missing file name", 500); // Would this ever occur?
+            doError(response, "Missing file name", 400);
             return false;
         }
 
@@ -309,6 +317,22 @@ public abstract class BaseServlet extends HttpServlet {
             filename = "document.pdf";
         }
 
+        final long fileSizeLimit = getFileSizeLimit(request);
+        if (fileSizeLimit > 0) {
+            long fileSize;
+            try {
+                fileSize = DownloadHelper.getFileSizeFromUrl(url);
+            } catch (IOException e) {
+                doError(response, "Internal error", 500);
+                return false;
+            }
+
+            if (fileSize > fileSizeLimit) {
+                doError(response, "File size limit exceeded", 400);
+                return false;
+            }
+        }
+
         // To allow use in lambda function.
         final String finalFilename = filename;
         final String contextUrl = getContextURL(request);
@@ -317,10 +341,13 @@ public abstract class BaseServlet extends HttpServlet {
         downloadQueue.submit(() -> {
             File inputFile;
             try {
-                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES);
+                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
                 individual.doError(1200);
+                return;
+            } catch (SizeLimitExceededException e) {
+                individual.doError(1210);
                 return;
             }
 
@@ -362,8 +389,7 @@ public abstract class BaseServlet extends HttpServlet {
      * request
      * @param params the map of parameters from the request
      * @param inputFile the File to convert
-     * @param outputDir the directory the converted file should be written
-     * to
+     * @param outputDir the directory the converted file should be written to
      * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
@@ -436,6 +462,22 @@ public abstract class BaseServlet extends HttpServlet {
     protected static String getContextURL(final HttpServletRequest request) {
         final StringBuffer full = request.getRequestURL();
         return full.substring(0, full.length() - request.getServletPath().length());
+    }
+
+    /**
+     * Try to get the fileSizeLimit attribute as a long from the
+     * HttpServeletRequest
+     *
+     * @param request the request from the client
+     * @return the value of fileSizeLimit or -1 if the attribute is not set
+     */
+    private static long getFileSizeLimit(final HttpServletRequest request) {
+        final Object rawSizeLimit = request.getAttribute("fileSizeLimit");
+        if (rawSizeLimit != null && rawSizeLimit instanceof Long) {
+            return (long) rawSizeLimit;
+        } else {
+            return -1L;
+        }
     }
 
     /**
