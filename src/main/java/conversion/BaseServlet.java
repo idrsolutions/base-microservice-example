@@ -496,6 +496,9 @@ public abstract class BaseServlet extends HttpServlet {
         int p = 0;
         for (final String set : splits) {
             final String[] ss = set.split(":");
+            if (ss.length < 2 && ss.length % 2 != 0) {
+                return null;
+            }
             result[p++] = ss[0];
             result[p++] = ss[1];
         }
