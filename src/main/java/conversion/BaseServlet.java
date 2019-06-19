@@ -339,16 +339,14 @@ public abstract class BaseServlet extends HttpServlet {
         final Map<String, String[]> parameterMap = request.getParameterMap();
 
         downloadQueue.submit(() -> {
-            File inputFile;
+            File inputFile = null;
             try {
-                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
+                final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
                 individual.doError(1200);
-                return;
             } catch (SizeLimitExceededException e) {
                 individual.doError(1210);
-                return;
             }
 
             final File outputDir = createOutputDirectory(individual.getUuid());
