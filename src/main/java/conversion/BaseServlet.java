@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.naming.SizeLimitExceededException;
 
@@ -45,11 +46,11 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
-    private static final String INPUTPATH = "../docroot/input/";
-    private static final String OUTPUTPATH = "../docroot/output/";
+    private static String INPUTPATH = "../docroot/input/";
+    private static String OUTPUTPATH = "../docroot/output/";
+    private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
-
     private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
@@ -58,6 +59,61 @@ public abstract class BaseServlet extends HttpServlet {
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
     private final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
+    /**
+     * Get the location where input files is stored
+     * @return inputPath the path where input files is stored
+     */
+    public static String getInputPath() {
+        return INPUTPATH;
+    }
+    
+    /**
+     * Get the location where the converter output is stored
+     * 
+     * @return outputPath the path where output files is stored
+     */
+    public static String getOutputPath() {
+        return OUTPUTPATH;
+    }
+    
+    /**
+     * Get the time to live of individuals on the server (The duration that the 
+     * information of an individual is kept on the server)
+     * 
+     * @return individualTTL the time to live of an individual
+     */
+    public static long getIndividualTTL() {
+        return individualTTL;
+    }
+    
+    /**
+     * Set the location where input files is stored
+     * 
+     * @param inputPath the path where input files is stored
+     */
+    public static void setInputPath(final String inputPath) {
+        INPUTPATH = inputPath;
+    }
+    
+    /**
+     * Set the location where the converter output is stored
+     * 
+     * @param outputPath the path where output files is stored
+     */
+    public static void setOutputPath(final String outputPath) {
+        OUTPUTPATH = outputPath;
+    }
+    
+    /**
+     * Set the time to live of individuals on the server (The duration that the 
+     * information of an individual is kept on the server)
+     * 
+     * @param ttlDuration the time to live of an individual
+     */
+    public static void setIndividualTTL(final long ttlDuration) {
+        individualTTL = ttlDuration;
+    }
+    
     /**
      * Set an HTTP error code and message to the given response.
      *
@@ -84,8 +140,7 @@ public abstract class BaseServlet extends HttpServlet {
         try (final PrintWriter out = response.getWriter()) {
             out.println(content);
         } catch (final IOException e) {
-            e.printStackTrace();
-            LOG.severe(e.getMessage());
+            LOG.log(Level.SEVERE, "IOException thrown when sending json response", e);
         }
     }
 
@@ -148,7 +203,7 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - 86400000); // 24 hours
+        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -247,6 +302,7 @@ public abstract class BaseServlet extends HttpServlet {
         try {
             filePart = request.getPart("file");
         } catch (IOException e) {
+            LOG.log(Level.SEVERE, "IOException when getting the file part", e);
             doError(response, "Error handling file", 500);
             return false;
         } catch (ServletException e) {
@@ -279,8 +335,7 @@ public abstract class BaseServlet extends HttpServlet {
             fileContent.close();
             inputFile = outputFile(originalFileName, individual, fileBytes);
         } catch (final IOException e) {
-            e.printStackTrace();
-            LOG.severe(e.getMessage());
+            LOG.log(Level.SEVERE, "IOException when reading an uploaded file", e);
             doError(response, "Internal error", 500); // Failed to save file to disk
             return false;
         }
@@ -323,6 +378,7 @@ public abstract class BaseServlet extends HttpServlet {
             try {
                 fileSize = DownloadHelper.getFileSizeFromUrl(url);
             } catch (IOException e) {
+                LOG.log(Level.SEVERE, "IOException when finding the FileSize of a remote file", e);
                 doError(response, "Internal error", 500);
                 return false;
             }
@@ -339,16 +395,14 @@ public abstract class BaseServlet extends HttpServlet {
         final Map<String, String[]> parameterMap = request.getParameterMap();
 
         downloadQueue.submit(() -> {
-            File inputFile;
+            File inputFile = null;
             try {
-                byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
+                final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
                 individual.doError(1200);
-                return;
             } catch (SizeLimitExceededException e) {
                 individual.doError(1210);
-                return;
             }
 
             final File outputDir = createOutputDirectory(individual.getUuid());
