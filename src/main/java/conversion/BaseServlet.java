@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.naming.SizeLimitExceededException;
 
@@ -47,7 +48,7 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static String INPUTPATH = "../docroot/input/";
     private static String OUTPUTPATH = "../docroot/output/";
-    private static long individualDuration = 86400000L; // 24 hours
+    private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
     private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
@@ -76,13 +77,13 @@ public abstract class BaseServlet extends HttpServlet {
     }
     
     /**
-     * Get the duration that the information of an individual is kept on the 
-     * server
+     * Get the time to live of individuals on the server (The duration that the 
+     * information of an individual is kept on the server)
      * 
-     * @return duration the duration information of an individual is retained
+     * @return individualTTL the time to live of an individual
      */
-    public static long getIndividualDuration() {
-        return individualDuration;
+    public static long getIndividualTTL() {
+        return individualTTL;
     }
     
     /**
@@ -104,12 +105,13 @@ public abstract class BaseServlet extends HttpServlet {
     }
     
     /**
-     * Set the duration that the information of an individual is kept on the 
-     * server
-     * @param duration the duration information of an individual is retained
+     * Set the time to live of individuals on the server (The duration that the 
+     * information of an individual is kept on the server)
+     * 
+     * @param ttlDuration the time to live of an individual
      */
-    public static void setIndividualDuration(final long duration) {
-        individualDuration = duration;
+    public static void setIndividualTTL(final long ttlDuration) {
+        individualTTL = ttlDuration;
     }
     
     /**
@@ -138,8 +140,7 @@ public abstract class BaseServlet extends HttpServlet {
         try (final PrintWriter out = response.getWriter()) {
             out.println(content);
         } catch (final IOException e) {
-            e.printStackTrace();
-            LOG.severe(e.getMessage());
+            LOG.log(Level.SEVERE, "IOException thrown when sending json response", e);
         }
     }
 
@@ -202,7 +203,7 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualDuration);
+        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -301,6 +302,7 @@ public abstract class BaseServlet extends HttpServlet {
         try {
             filePart = request.getPart("file");
         } catch (IOException e) {
+            LOG.log(Level.SEVERE, "IOException when getting the file part", e);
             doError(response, "Error handling file", 500);
             return false;
         } catch (ServletException e) {
@@ -333,8 +335,7 @@ public abstract class BaseServlet extends HttpServlet {
             fileContent.close();
             inputFile = outputFile(originalFileName, individual, fileBytes);
         } catch (final IOException e) {
-            e.printStackTrace();
-            LOG.severe(e.getMessage());
+            LOG.log(Level.SEVERE, "IOException when reading an uploaded file", e);
             doError(response, "Internal error", 500); // Failed to save file to disk
             return false;
         }
@@ -377,6 +378,7 @@ public abstract class BaseServlet extends HttpServlet {
             try {
                 fileSize = DownloadHelper.getFileSizeFromUrl(url);
             } catch (IOException e) {
+                LOG.log(Level.SEVERE, "IOException when finding the FileSize of a remote file", e);
                 doError(response, "Internal error", 500);
                 return false;
             }
