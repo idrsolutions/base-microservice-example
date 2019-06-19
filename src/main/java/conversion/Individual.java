@@ -50,7 +50,14 @@ public class Individual {
         state = "queued";
     }
     
-    void doError(final int errorCode) {
+    /**
+     * Change the state to error and set error code. This is used when an error 
+     * has occurred during processing. The error code should specify what went
+     * wrong.
+     *
+     * @param errorCode the error code of the Individual
+     */
+    public void doError(final int errorCode) {
         this.state = "error";
         this.errorCode = String.valueOf(errorCode);
     }
@@ -143,17 +150,6 @@ public class Individual {
      */
     public String getErrorCode() {
         return errorCode;
-    }
-
-    /**
-     * Set the error code of the Individual. This is used when an error has
-     * occurred during processing. The error code should specify what went
-     * wrong.
-     *
-     * @param errorCode the error code of the Individual
-     */
-    public void setErrorCode(String errorCode) {
-        this.errorCode = errorCode;
     }
 
     /**

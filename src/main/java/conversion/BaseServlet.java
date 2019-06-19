@@ -45,11 +45,11 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
-    private static final String INPUTPATH = "../docroot/input/";
-    private static final String OUTPUTPATH = "../docroot/output/";
+    private static String INPUTPATH = "../docroot/input/";
+    private static String OUTPUTPATH = "../docroot/output/";
+    private static long individualDuration = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
-
     private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
@@ -58,6 +58,60 @@ public abstract class BaseServlet extends HttpServlet {
     private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
     private final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
+    /**
+     * Get the location where input files is stored
+     * @return inputPath the path where input files is stored
+     */
+    public static String getInputPath() {
+        return INPUTPATH;
+    }
+    
+    /**
+     * Get the location where the converter output is stored
+     * 
+     * @return outputPath the path where output files is stored
+     */
+    public static String getOutputPath() {
+        return OUTPUTPATH;
+    }
+    
+    /**
+     * Get the duration that the information of an individual is kept on the 
+     * server
+     * 
+     * @return duration the duration information of an individual is retained
+     */
+    public static long getIndividualDuration() {
+        return individualDuration;
+    }
+    
+    /**
+     * Set the location where input files is stored
+     * 
+     * @param inputPath the path where input files is stored
+     */
+    public static void setInputPath(final String inputPath) {
+        INPUTPATH = inputPath;
+    }
+    
+    /**
+     * Set the location where the converter output is stored
+     * 
+     * @param outputPath the path where output files is stored
+     */
+    public static void setOutputPath(final String outputPath) {
+        OUTPUTPATH = outputPath;
+    }
+    
+    /**
+     * Set the duration that the information of an individual is kept on the 
+     * server
+     * @param duration the duration information of an individual is retained
+     */
+    public static void setIndividualDuration(final long duration) {
+        individualDuration = duration;
+    }
+    
     /**
      * Set an HTTP error code and message to the given response.
      *
@@ -148,7 +202,7 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - 86400000); // 24 hours
+        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualDuration);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
