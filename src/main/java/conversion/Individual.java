@@ -37,7 +37,7 @@ public class Individual {
     private String errorCode;
     private Object customData;
 
-    private final HashMap<String, String> customValues = new HashMap<>();
+    private final HashMap<String, JsonValue> customValues = new HashMap<>();
 
     /**
      * Create individual with a specific UUID.
@@ -72,8 +72,8 @@ public class Individual {
         json.append("{\"state\":\"").append(state).append("\"")
                 .append(errorCode != null ? ",\"errorCode\":" + errorCode : "");
 
-        for (final Map.Entry<String, String> valuePair : customValues.entrySet()) {
-            json.append(",\"").append(valuePair.getKey()).append("\":\"").append(valuePair.getValue()).append("\"");
+        for (final Map.Entry<String, JsonValue> valuePair : customValues.entrySet()) {
+            json.append(",\"").append(valuePair.getKey()).append("\":").append(valuePair.getValue().toString());
         }
 
         json.append("}");
@@ -89,7 +89,29 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final String value) {
-        customValues.put(key, value);
+        customValues.put(key, JsonValue.of(value));
+    }
+
+    /**
+     * Adds a key value pair to the individual to pass to the client in GET
+     * requests and callbacks.
+     *
+     * @param key the key to be passed to the client
+     * @param value the value mapped to the key
+     */
+    public void setValue(final String key, final boolean value) {
+        customValues.put(key, JsonValue.of(value));
+    }
+
+    /**
+     * Adds a key value pair to the individual to pass to the client in GET
+     * requests and callbacks.
+     *
+     * @param key the key to be passed to the client
+     * @param value the value mapped to the key
+     */
+    public void setValue(final String key, final int value) {
+        customValues.put(key, JsonValue.of(value));
     }
 
     /**
@@ -177,5 +199,38 @@ public class Individual {
      */
     public long getTimestamp() {
         return timestamp;
+    }
+
+    private static abstract class JsonValue {
+        private JsonValue() {}
+
+        abstract public String toString();
+
+        private static JsonValue of(final String value) {
+            return new JsonValue() {
+                @Override
+                public String toString() {
+                    return '"' + value + '"';
+                }
+            };
+        }
+
+        private static JsonValue of(final int value) {
+            return new JsonValue() {
+                @Override
+                public String toString() {
+                    return String.valueOf(value);
+                }
+            };
+        }
+
+        private static JsonValue of(final boolean value) {
+            return new JsonValue() {
+                @Override
+                public String toString() {
+                    return String.valueOf(value);
+                }
+            };
+        }
     }
 }
