@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  */
 public class GCPHelper {
     
-    private final static Logger LOG = Logger.getLogger(HttpHelper.class.getName());
+    private final static Logger LOG = Logger.getLogger(GCPHelper.class.getName());
     
     /**
      * Handles the process of uploading to the Google Cloud Platform using the
@@ -51,7 +51,7 @@ public class GCPHelper {
      */
     public static void handleGCPUpload(final Individual individual, final String fileLocation, final String fileContentType, final Map<String, String> outputOptions) throws Exception {
         final Storage storage;
-        final String gcpAC = outputOptions.get("gcpApplicationCredentials"); // see the GOOGLE_APPLICATION_CREDENTIALS environment variable documentation
+        final String gcpAC = outputOptions.get("gcpApplicationCredentials");
         final String bucketName = outputOptions.get("bucketName");
         
         if (gcpAC != null) {
@@ -98,7 +98,7 @@ public class GCPHelper {
      */
     public static void uploadToGCP(final Individual individual, final Bucket bucket, final String fileLocation, final String fileContentType) throws Exception {
         final Storage storage = bucket.getStorage();
-        final BlobInfo blobInfo = BlobInfo.newBuilder(bucket.getName(), fileLocation).setContentType(fileContentType).build(); // "application/zip"
+        final BlobInfo blobInfo = BlobInfo.newBuilder(bucket.getName(), fileLocation).setContentType(fileContentType).build();
         final Blob blob = storage.create(blobInfo, Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
 
         if (blob != null) {
