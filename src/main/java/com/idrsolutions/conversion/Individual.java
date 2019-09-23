@@ -18,14 +18,14 @@
  * limitations under the License.
  *
  */
-package conversion;
+package com.idrsolutions.conversion;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Represents a file conversion request to the server. Allows storage of UUID's
+ * Represents a file com.idrsolutions.conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
  */
 public class Individual {
@@ -124,18 +124,18 @@ public class Individual {
     }
 
     /**
-     * Returns true if this conversion is queued or in progress, and false if the
-     * conversion has completed or thrown an error.
+     * Returns true if this com.idrsolutions.conversion is queued or in progress, and false if the
+     * com.idrsolutions.conversion has completed or thrown an error.
      *
-     * @return if the conversion is alive
+     * @return if the com.idrsolutions.conversion is alive
      */
     public boolean isAlive() {
         return isAlive;
     }
 
     /**
-     * Set the alive state of the Individual. True if the conversion is queued or
-     * in progress, and false if the conversion has completed or thrown an error.
+     * Set the alive state of the Individual. True if the com.idrsolutions.conversion is queued or
+     * in progress, and false if the com.idrsolutions.conversion has completed or thrown an error.
      *
      * @param alive the alive state of the Individual
      */

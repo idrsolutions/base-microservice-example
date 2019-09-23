@@ -18,10 +18,10 @@
  * limitations under the License.
  *
  */
-package conversion;
+package com.idrsolutions.conversion;
 
-import conversion.utils.DownloadHelper;
-import conversion.utils.HttpHelper;
+import com.idrsolutions.conversion.utils.DownloadHelper;
+import com.idrsolutions.conversion.utils.HttpHelper;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import javax.naming.SizeLimitExceededException;
 
 /**
- * An extendable base for conversion microservices. Provides general
+ * An extendable base for com.idrsolutions.conversion microservices. Provides general
  * functionality for polling, file upload/download, initial creation of files
  * and UUID's.
  */
@@ -290,10 +290,10 @@ public abstract class BaseServlet extends HttpServlet {
      * Handle and convert file uploaded in the request.
      * <p>
      * This method blocks until the file is initially processed and exists when
-     * the conversion begins.
+     * the com.idrsolutions.conversion begins.
      *
-     * @param individual the individual associated with this conversion
-     * @param request the request for this conversion
+     * @param individual the individual associated with this com.idrsolutions.conversion
+     * @param request the request for this com.idrsolutions.conversion
      * @param response the response object for the request
      * @return true on success, false on failure
      */
@@ -353,8 +353,8 @@ public abstract class BaseServlet extends HttpServlet {
      * This method does not block when attempting to download the file from the
      * url.
      *
-     * @param individual the individual associated with this conversion
-     * @param request the request for this conversion
+     * @param individual the individual associated with this com.idrsolutions.conversion
+     * @param request the request for this com.idrsolutions.conversion
      * @param response the response object for the request
      * @return true on initial success (url has been provided)
      */
@@ -413,9 +413,9 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Add a conversion task to the thread queue.
+     * Add a com.idrsolutions.conversion task to the thread queue.
      *
-     * @param individual the individual belonging to this conversion
+     * @param individual the individual belonging to this com.idrsolutions.conversion
      * @param params the parameter map from the request
      * @param inputFile the input file to convert
      * @param outputDir the output directory to convert to
@@ -454,7 +454,7 @@ public abstract class BaseServlet extends HttpServlet {
      * Write the given file bytes to the output directory under filename.
      *
      * @param filename the filename to output to
-     * @param individual the individual that began the conversion request
+     * @param individual the individual that began the com.idrsolutions.conversion request
      * @param fileBytes the bytes to be written.
      * @return the created file
      * @throws IOException on file not being writable
@@ -526,7 +526,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @return the value of fileSizeLimit or -1 if the attribute is not set
      */
     private static long getFileSizeLimit(final HttpServletRequest request) {
-        final Object rawSizeLimit = request.getAttribute("fileSizeLimit");
+        final Object rawSizeLimit = request.getAttribute("com.idrsolutions.fileSizeLimit");
         if (rawSizeLimit != null && rawSizeLimit instanceof Long) {
             return (long) rawSizeLimit;
         } else {
@@ -535,7 +535,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the conversion parameters.
+     * Get the com.idrsolutions.conversion parameters.
      *
      * @param settings a list of k/v pairs in the form:
      * "key1:val1;key2:val2;etc..."

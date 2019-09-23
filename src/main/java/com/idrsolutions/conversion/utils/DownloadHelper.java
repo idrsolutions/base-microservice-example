@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package conversion.utils;
+package com.idrsolutions.conversion.utils;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
