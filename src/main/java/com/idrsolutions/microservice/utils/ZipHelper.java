@@ -18,7 +18,7 @@
  * limitations under the License.
  *
  */
-package conversion.utils;
+package com.idrsolutions.microservice.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
