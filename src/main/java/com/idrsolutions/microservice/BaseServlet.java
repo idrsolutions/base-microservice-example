@@ -215,7 +215,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String uuidStr = UUID.randomUUID().toString();
         final Individual individual = new Individual(uuidStr);
 
-        individual.setCustomData(request.getAttribute("customData"));
+        individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
 
         switch (inputType) {
             case "upload":
