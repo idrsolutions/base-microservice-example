@@ -18,7 +18,7 @@
  * limitations under the License.
  *
  */
-package conversion.utils;
+package com.idrsolutions.microservice.utils;
 
 import java.io.IOException;
 import java.io.OutputStream;

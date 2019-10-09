@@ -18,7 +18,7 @@
  * limitations under the License.
  *
  */
-package conversion;
+package com.idrsolutions.microservice;
 
 import java.util.Date;
 import java.util.HashMap;

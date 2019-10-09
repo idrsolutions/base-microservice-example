@@ -18,10 +18,11 @@
  * limitations under the License.
  *
  */
-package conversion;
+package com.idrsolutions.microservice;
 
-import conversion.utils.DownloadHelper;
-import conversion.utils.HttpHelper;
+import com.idrsolutions.microservice.utils.DownloadHelper;
+import com.idrsolutions.microservice.utils.HttpHelper;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -214,7 +215,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String uuidStr = UUID.randomUUID().toString();
         final Individual individual = new Individual(uuidStr);
 
-        individual.setCustomData(request.getAttribute("customData"));
+        individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
 
         switch (inputType) {
             case "upload":
@@ -526,7 +527,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @return the value of fileSizeLimit or -1 if the attribute is not set
      */
     private static long getFileSizeLimit(final HttpServletRequest request) {
-        final Object rawSizeLimit = request.getAttribute("fileSizeLimit");
+        final Object rawSizeLimit = request.getAttribute("com.idrsolutions.microservice.fileSizeLimit");
         if (rawSizeLimit != null && rawSizeLimit instanceof Long) {
             return (long) rawSizeLimit;
         } else {
