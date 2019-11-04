@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,13 +51,8 @@ public abstract class BaseServlet extends HttpServlet {
     private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
-    private static final int PCOUNT = Runtime.getRuntime().availableProcessors();
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
-
-    private final ExecutorService convertQueue = Executors.newFixedThreadPool(PCOUNT);
-    private final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
-    private final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
     /**
      * Get the location where input files is stored
@@ -395,6 +389,8 @@ public abstract class BaseServlet extends HttpServlet {
         final String contextUrl = getContextURL(request);
         final Map<String, String[]> parameterMap = request.getParameterMap();
 
+        final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
+
         downloadQueue.submit(() -> {
             File inputFile = null;
             try {
@@ -425,6 +421,8 @@ public abstract class BaseServlet extends HttpServlet {
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
             final File outputDir, final String contextUrl) {
         final Map<String, String[]> paramsCopy = new HashMap<>(params);
+
+        final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
@@ -502,6 +500,7 @@ public abstract class BaseServlet extends HttpServlet {
             final String callbackUrl = rawParam[0];
 
             if (!callbackUrl.equals("")) {
+                final ScheduledExecutorService callbackQueue = (ScheduledExecutorService) getServletContext().getAttribute("callbackQueue");
                 callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
             }
         }
