@@ -112,25 +112,27 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Set an HTTP error code and message to the given response.
      *
+     * @param request the HttpServletRequest object to reply to
      * @param response the HttpServletResponse object on which to send the
      * response
      * @param error the error message to pass in the body of the client
      * @param status the HTTP status to set the response to response.
      */
-    protected static void doError(final HttpServletResponse response, final String error, final int status) {
+    protected static void doError(final HttpServletRequest request, final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
-        sendResponse(response, "{\"error\":\"" + error + "\"}");
+        sendResponse(request, response, "{\"error\":\"" + error + "\"}");
     }
 
     /**
      * Send a JSON response
      *
+     * @param request the HttpServletRequest object to reply to
      * @param response the HttpServletResponse object on which to send the
      * response
      * @param content the JSON response to send
      */
-    private static void sendResponse(final HttpServletResponse response, final String content) {
-        allowCrossOrigin(response);
+    private static void sendResponse(final HttpServletRequest request, final HttpServletResponse response, final String content) {
+        allowCrossOrigin(request, response);
         response.setContentType("application/json");
         try (final PrintWriter out = response.getWriter()) {
             out.println(content);
@@ -151,17 +153,17 @@ public abstract class BaseServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         final String uuidStr = request.getParameter("uuid");
         if (uuidStr == null) {
-            doError(response, "No uuid provided", 404);
+            doError(request, response, "No uuid provided", 404);
             return;
         }
 
         final Individual individual = imap.get(uuidStr);
         if (individual == null) {
-            doError(response, "Unknown uuid: " + uuidStr, 404);
+            doError(request, response, "Unknown uuid: " + uuidStr, 404);
             return;
         }
 
-        sendResponse(response, individual.toJsonString());
+        sendResponse(request, response, individual.toJsonString());
     }
 
     /**
@@ -170,11 +172,11 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#allowCrossOrigin(HttpServletResponse)
+     * @see BaseServlet#allowCrossOrigin(HttpServletRequest,  HttpServletResponse)
      */
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) {
-        allowCrossOrigin(response);
+        allowCrossOrigin(request, response);
     }
 
     /**
@@ -182,10 +184,16 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param response the response object to the request from the client
      */
-    private static void allowCrossOrigin(final HttpServletResponse response) {
-        response.addHeader("Access-Control-Allow-Origin", "*");
+    private static void allowCrossOrigin(final HttpServletRequest request, final HttpServletResponse response) {
+        String origin = request.getHeader("origin");
+        if (origin == null) {
+            origin = "*";
+        }
+
+        response.addHeader("Access-Control-Allow-Credentials", "true");
+        response.addHeader("Access-Control-Allow-Origin", origin);
         response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
-        response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin");
+        response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin, authorization");
     }
 
     /**
@@ -202,7 +210,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
-            doError(response, "Missing input type", 400);
+            doError(request, response, "Missing input type", 400);
             return;
         }
 
@@ -225,13 +233,13 @@ public abstract class BaseServlet extends HttpServlet {
                 break;
 
             default:
-                doError(response, "Unrecognised input type", 400);
+                doError(request, response, "Unrecognised input type", 400);
                 return;
         }
 
         imap.put(uuidStr, individual);
 
-        sendResponse(response, "{" + "\"uuid\":\"" + uuidStr + "\"}");
+        sendResponse(request, response, "{" + "\"uuid\":\"" + uuidStr + "\"}");
     }
 
     /**
@@ -298,27 +306,27 @@ public abstract class BaseServlet extends HttpServlet {
             filePart = request.getPart("file");
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "IOException when getting the file part", e);
-            doError(response, "Error handling file", 500);
+            doError(request, response, "Error handling file", 500);
             return false;
         } catch (ServletException e) {
-            doError(response, "Missing file", 400);
+            doError(request, response, "Missing file", 400);
             return false;
         }
 
         if (filePart == null) {
-            doError(response, "Missing file", 400);
+            doError(request, response, "Missing file", 400);
             return false;
         }
 
         final long fileSizeLimit = getFileSizeLimit(request);
         if (fileSizeLimit > 0 && filePart.getSize() > fileSizeLimit) {
-            doError(response, "File size limit exceeded", 400);
+            doError(request, response, "File size limit exceeded", 400);
             return false;
         }
 
         final String originalFileName = getFileName(filePart);
         if (originalFileName == null) {
-            doError(response, "Missing file name", 400);
+            doError(request, response, "Missing file name", 400);
             return false;
         }
 
@@ -331,7 +339,7 @@ public abstract class BaseServlet extends HttpServlet {
             inputFile = outputFile(originalFileName, individual, fileBytes);
         } catch (final IOException e) {
             LOG.log(Level.SEVERE, "IOException when reading an uploaded file", e);
-            doError(response, "Internal error", 500); // Failed to save file to disk
+            doError(request, response, "Internal error", 500); // Failed to save file to disk
             return false;
         }
 
@@ -357,7 +365,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         String url = request.getParameter("url");
         if (url == null) {
-            doError(response, "No url given", 400);
+            doError(request, response, "No url given", 400);
             return false;
         }
         // This does not need to be asynchronous
@@ -374,12 +382,12 @@ public abstract class BaseServlet extends HttpServlet {
                 fileSize = DownloadHelper.getFileSizeFromUrl(url);
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, "IOException when finding the FileSize of a remote file", e);
-                doError(response, "Internal error", 500);
+                doError(request, response, "Internal error", 500);
                 return false;
             }
 
             if (fileSize > fileSizeLimit) {
-                doError(response, "File size limit exceeded", 400);
+                doError(request, response, "File size limit exceeded", 400);
                 return false;
             }
         }
