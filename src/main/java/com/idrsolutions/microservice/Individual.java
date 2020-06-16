@@ -35,6 +35,7 @@ public class Individual {
     private final long timestamp;
     private String state;
     private String errorCode;
+    private String errorMessage;
     private Object customData;
 
     private final HashMap<String, JsonValue> customValues = new HashMap<>();
@@ -57,9 +58,10 @@ public class Individual {
      *
      * @param errorCode the error code of the Individual
      */
-    public void doError(final int errorCode) {
+    public void doError(final int errorCode, final String errorMessage) {
         this.state = "error";
         this.errorCode = String.valueOf(errorCode);
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -70,7 +72,8 @@ public class Individual {
     String toJsonString() {
         final StringBuilder json = new StringBuilder();
         json.append("{\"state\":\"").append(state).append("\"")
-                .append(errorCode != null ? ",\"errorCode\":" + errorCode : "");
+                .append(errorCode != null ? ",\"errorCode\":" + errorCode : "")
+                .append(errorMessage != null ? ",\"error\":" + errorMessage : "");
 
         for (final Map.Entry<String, JsonValue> valuePair : customValues.entrySet()) {
             json.append(",\"").append(valuePair.getKey()).append("\":").append(valuePair.getValue().toString());
@@ -172,6 +175,17 @@ public class Individual {
      */
     public String getErrorCode() {
         return errorCode;
+    }
+
+    /**
+     * Gets the error code of the Individual (empty string if not set). This is used
+     * when an error has occurred during processing. The error message should
+     * specify what went wrong.
+     *
+     * @return the error message of the Individual (empty string if not set)
+     */
+    public String getErrorMessage() {
+        return errorMessage;
     }
 
     /**

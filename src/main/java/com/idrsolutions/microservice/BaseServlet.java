@@ -405,9 +405,9 @@ public abstract class BaseServlet extends HttpServlet {
                 final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
-                individual.doError(1200);
+                individual.doError(1200, "Could not get file from URL");
             } catch (SizeLimitExceededException e) {
-                individual.doError(1210);
+                individual.doError(1210, "File exceeds file size limit");
             }
 
             final File outputDir = createOutputDirectory(individual.getUuid());
