@@ -22,6 +22,7 @@ package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
+import com.idrsolutions.microservice.utils.SettingsValidator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -211,6 +212,14 @@ public abstract class BaseServlet extends HttpServlet {
         final String inputType = request.getParameter("input");
         if (inputType == null) {
             doError(request, response, "Missing input type", 400);
+            return;
+        }
+
+        final String[] settings = request.getParameterMap().get("settings");
+        final String[] conversionParams = settings != null ? getConversionParams(settings[0]) : null;
+        final SettingsValidator validator = validateSettings(conversionParams);
+        if (!validator.isValid()) {
+            doError(request, response, "Invalid settings detected.\n" + validator.getMessage(), 400);
             return;
         }
 
@@ -441,6 +450,8 @@ public abstract class BaseServlet extends HttpServlet {
             }
         });
     }
+
+    protected abstract SettingsValidator validateSettings(final String[] conversionParams);
 
     /**
      * This method converts a file and writes it to the output directory under
