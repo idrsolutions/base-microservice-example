@@ -38,6 +38,23 @@ public class SettingsValidator {
         return null;
     }
 
+    public String validateString(final String setting, final String regex, final boolean required) {
+        if (paramMap.containsKey(setting)) {
+            final String value = paramMap.remove(setting);
+            if (!value.matches(regex)) {
+                errorMessage.append(required ? "Required " : "Optional ").append("setting \"").append(setting)
+                        .append("\" has incorrect value. Please check the API documents for more details.\n");
+            }
+            return value;
+        } else {
+            if (required) {
+                errorMessage.append("Required setting \"").append(setting).append("\" missing. Valid value must match the regex \"")
+                        .append(regex).append("\".\n");
+            }
+        }
+        return null;
+    }
+
     public Boolean validateBoolean(final String setting, final boolean required) {
         if (paramMap.containsKey(setting)) {
             final String value = paramMap.remove(setting);
