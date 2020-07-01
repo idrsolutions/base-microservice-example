@@ -216,8 +216,7 @@ public abstract class BaseServlet extends HttpServlet {
         }
 
         final String[] settings = request.getParameterMap().get("settings");
-        final String[] conversionParams = settings != null ? getConversionParams(settings[0]) : null;
-        final SettingsValidator validator = validateSettings(conversionParams);
+        final SettingsValidator validator = validateSettings(settings[0]);
         if (!validator.isValid()) {
             doError(request, response, "Invalid settings detected.\n" + validator.getMessage(), 400);
             return;
@@ -451,7 +450,7 @@ public abstract class BaseServlet extends HttpServlet {
         });
     }
 
-    protected abstract SettingsValidator validateSettings(final String[] conversionParams);
+    protected abstract SettingsValidator validateSettings(final String conversionParams);
 
     /**
      * This method converts a file and writes it to the output directory under
