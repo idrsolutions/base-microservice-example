@@ -450,7 +450,7 @@ public abstract class BaseServlet extends HttpServlet {
         });
     }
 
-    protected abstract SettingsValidator validateSettings(final String conversionParams);
+    protected abstract SettingsValidator validateSettings(final String settings);
 
     /**
      * This method converts a file and writes it to the output directory under
