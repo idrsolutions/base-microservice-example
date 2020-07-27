@@ -216,7 +216,7 @@ public abstract class BaseServlet extends HttpServlet {
         }
 
         final String[] settings = request.getParameterMap().get("settings");
-        final SettingsValidator validator = validateSettings(settings[0]);
+        final SettingsValidator validator =  settings != null ? validateSettings(settings[0]) : validateSettings(null);
         if (!validator.isValid()) {
             doError(request, response, "Invalid settings detected.\n" + validator.getMessage(), 400);
             return;
