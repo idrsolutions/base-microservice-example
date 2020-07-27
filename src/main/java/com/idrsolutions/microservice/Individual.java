@@ -73,7 +73,7 @@ public class Individual {
         final StringBuilder json = new StringBuilder();
         json.append("{\"state\":\"").append(state).append("\"")
                 .append(errorCode != null ? ",\"errorCode\":" + errorCode : "")
-                .append(errorMessage != null ? ",\"error\":" + errorMessage : "");
+                .append(errorMessage != null ? ",\"error\":\"" + errorMessage + "\"" : "");
 
         for (final Map.Entry<String, JsonValue> valuePair : customValues.entrySet()) {
             json.append(",\"").append(valuePair.getKey()).append("\":").append(valuePair.getValue().toString());
