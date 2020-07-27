@@ -62,54 +62,54 @@ public abstract class BaseServlet extends HttpServlet {
     public static String getInputPath() {
         return INPUTPATH;
     }
-    
+
     /**
      * Get the location where the converter output is stored
-     * 
+     *
      * @return outputPath the path where output files is stored
      */
     public static String getOutputPath() {
         return OUTPUTPATH;
     }
-    
+
     /**
      * Get the time to live of individuals on the server (The duration that the 
      * information of an individual is kept on the server)
-     * 
+     *
      * @return individualTTL the time to live of an individual
      */
     public static long getIndividualTTL() {
         return individualTTL;
     }
-    
+
     /**
      * Set the location where input files is stored
-     * 
+     *
      * @param inputPath the path where input files is stored
      */
     public static void setInputPath(final String inputPath) {
         INPUTPATH = inputPath;
     }
-    
+
     /**
      * Set the location where the converter output is stored
-     * 
+     *
      * @param outputPath the path where output files is stored
      */
     public static void setOutputPath(final String outputPath) {
         OUTPUTPATH = outputPath;
     }
-    
+
     /**
      * Set the time to live of individuals on the server (The duration that the 
      * information of an individual is kept on the server)
-     * 
+     *
      * @param ttlDuration the time to live of an individual
      */
     public static void setIndividualTTL(final long ttlDuration) {
         individualTTL = ttlDuration;
     }
-    
+
     /**
      * Set an HTTP error code and message to the given response.
      *
@@ -173,7 +173,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#allowCrossOrigin(HttpServletRequest,  HttpServletResponse)
+     * @see BaseServlet#allowCrossOrigin(HttpServletRequest, HttpServletResponse)
      */
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) {
@@ -215,8 +215,8 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        final String[] settings = request.getParameterMap().get("settings");
-        final SettingsValidator validator =  settings != null ? validateSettings(settings[0]) : validateSettings(null);
+        final String settings = request.getParameter("settings");
+        final SettingsValidator validator = validateSettings(settings);
         if (!validator.isValid()) {
             doError(request, response, "Invalid settings detected.\n" + validator.getMessage(), 400);
             return;
@@ -227,15 +227,17 @@ public abstract class BaseServlet extends HttpServlet {
 
         individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
 
+        final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
+
         switch (inputType) {
             case "upload":
-                if (!handleFileFromRequest(individual, request, response)) {
+                if (!handleFileFromRequest(individual, request, response, parameterMap)) {
                     return;
                 }
                 break;
 
             case "download":
-                if (!handleFileFromUrl(individual, request, response)) {
+                if (!handleFileFromUrl(individual, request, response, parameterMap)) {
                     return;
                 }
                 break;
@@ -306,9 +308,11 @@ public abstract class BaseServlet extends HttpServlet {
      * @param individual the individual associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
+     * @param params the parameter map from the request
      * @return true on success, false on failure
      */
-    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request,
+                                          final HttpServletResponse response, final Map<String, String[]> params) {
         final Part filePart;
         try {
             filePart = request.getPart("file");
@@ -353,7 +357,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File outputDir = createOutputDirectory(individual.getUuid());
 
-        addToQueue(individual, request.getParameterMap(), inputFile, outputDir, getContextURL(request));
+        addToQueue(individual, params, inputFile, outputDir, getContextURL(request));
 
         return true;
     }
@@ -367,9 +371,11 @@ public abstract class BaseServlet extends HttpServlet {
      * @param individual the individual associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
+     * @param params the parameter map from the request
      * @return true on initial success (url has been provided)
      */
-    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request,
+                                      final HttpServletResponse response, final Map<String, String[]> params) {
 
         String url = request.getParameter("url");
         if (url == null) {
@@ -403,7 +409,6 @@ public abstract class BaseServlet extends HttpServlet {
         // To allow use in lambda function.
         final String finalFilename = filename;
         final String contextUrl = getContextURL(request);
-        final Map<String, String[]> parameterMap = request.getParameterMap();
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
 
@@ -419,7 +424,7 @@ public abstract class BaseServlet extends HttpServlet {
             }
 
             final File outputDir = createOutputDirectory(individual.getUuid());
-            addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
+            addToQueue(individual, params, inputFile, outputDir, contextUrl);
         });
 
         return true;
@@ -435,15 +440,14 @@ public abstract class BaseServlet extends HttpServlet {
      * @param contextUrl the context url of the servlet
      */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
-            final File outputDir, final String contextUrl) {
-        final Map<String, String[]> paramsCopy = new HashMap<>(params);
+                            final File outputDir, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
-                convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
-                handleCallback(individual, paramsCopy);
+                convert(individual, params, inputFile, outputDir, contextUrl);
+                handleCallback(individual, params);
             } finally {
                 individual.setAlive(false);
             }
@@ -465,7 +469,7 @@ public abstract class BaseServlet extends HttpServlet {
      * pattern.
      */
     protected abstract void convert(Individual individual, Map<String, String[]> params,
-            File inputFile, File outputDir, String contextUrl);
+                                    File inputFile, File outputDir, String contextUrl);
 
     /**
      * Write the given file bytes to the output directory under filename.
