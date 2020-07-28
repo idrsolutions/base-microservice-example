@@ -58,7 +58,7 @@ public class SettingsValidator {
     public Boolean validateBoolean(final String setting, final boolean required) {
         if (paramMap.containsKey(setting)) {
             final String value = paramMap.remove(setting);
-            if (!(value.equalsIgnoreCase("true") | value.equalsIgnoreCase("false"))) {
+            if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false")) {
                 errorMessage.append(required ? "Required " : "Optional ").append("setting \"").append(setting)
                         .append("\" has incorrect value. Valid values are true or false.\n");
             } else {
