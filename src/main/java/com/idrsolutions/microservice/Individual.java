@@ -76,8 +76,6 @@ public class Individual {
                 .add("state", state);
         if (errorCode != null) {
             json.add("errorCode", errorCode);
-        }
-        if (errorMessage != null) {
             json.add("error", errorMessage);
         }
 
