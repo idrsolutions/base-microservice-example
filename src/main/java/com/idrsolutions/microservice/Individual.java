@@ -21,8 +21,10 @@
 package com.idrsolutions.microservice;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 /**
  * Represents a file conversion request to the server. Allows storage of UUID's
@@ -38,7 +40,7 @@ public class Individual {
     private String errorMessage;
     private Object customData;
 
-    private final HashMap<String, JsonValue> customValues = new HashMap<>();
+    private JsonObjectBuilder customValues = Json.createObjectBuilder();
 
     /**
      * Create individual with a specific UUID.
@@ -50,7 +52,7 @@ public class Individual {
         timestamp = new Date().getTime();
         state = "queued";
     }
-    
+
     /**
      * Change the state to error and set error code. This is used when an error 
      * has occurred during processing. The error code should specify what went
@@ -70,18 +72,32 @@ public class Individual {
      * @return a JSON string representing this individuals state
      */
     String toJsonString() {
-        final StringBuilder json = new StringBuilder();
-        json.append("{\"state\":\"").append(state).append("\"")
-                .append(errorCode != null ? ",\"errorCode\":" + errorCode : "")
-                .append(errorMessage != null ? ",\"error\":\"" + errorMessage + "\"" : "");
-
-        for (final Map.Entry<String, JsonValue> valuePair : customValues.entrySet()) {
-            json.append(",\"").append(valuePair.getKey()).append("\":").append(valuePair.getValue().toString());
+        final JsonObjectBuilder json = Json.createObjectBuilder()
+                .add("state", state);
+        if (errorCode != null) {
+            json.add("errorCode", errorCode);
+        }
+        if (errorMessage != null) {
+            json.add("error", errorMessage);
         }
 
-        json.append("}");
+        getCustomValues().forEach((s, jsonValue) -> json.add(s, jsonValue));
 
-        return json.toString();
+        return json.build().toString();
+    }
+
+    /**
+     * Get the immutable JsonObject from customValues, while ensuring customValues
+     * keeps mutability
+     *
+     * @return an immutable JsonObject of customValues
+     */
+    private JsonObject getCustomValues() {
+        final JsonObject jsonObj = customValues.build();
+        customValues = Json.createObjectBuilder();
+        jsonObj.forEach((s, jsonValue) -> customValues.add(s, jsonValue));
+
+        return jsonObj;
     }
 
     /**
@@ -92,7 +108,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final String value) {
-        customValues.put(key, JsonValue.of(value));
+        customValues.add(key, value);
     }
 
     /**
@@ -103,7 +119,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final boolean value) {
-        customValues.put(key, JsonValue.of(value));
+        customValues.add(key, value);
     }
 
     /**
@@ -114,7 +130,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final int value) {
-        customValues.put(key, JsonValue.of(value));
+        customValues.add(key, value);
     }
 
     /**
@@ -213,38 +229,5 @@ public class Individual {
      */
     public long getTimestamp() {
         return timestamp;
-    }
-
-    private static abstract class JsonValue {
-        private JsonValue() {}
-
-        abstract public String toString();
-
-        private static JsonValue of(final String value) {
-            return new JsonValue() {
-                @Override
-                public String toString() {
-                    return '"' + value + '"';
-                }
-            };
-        }
-
-        private static JsonValue of(final int value) {
-            return new JsonValue() {
-                @Override
-                public String toString() {
-                    return String.valueOf(value);
-                }
-            };
-        }
-
-        private static JsonValue of(final boolean value) {
-            return new JsonValue() {
-                @Override
-                public String toString() {
-                    return String.valueOf(value);
-                }
-            };
-        }
     }
 }

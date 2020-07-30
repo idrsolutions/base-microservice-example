@@ -24,6 +24,7 @@ import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 import com.idrsolutions.microservice.utils.SettingsValidator;
 
+import javax.json.Json;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -121,7 +122,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     protected static void doError(final HttpServletRequest request, final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
-        sendResponse(request, response, "{\"error\":\"" + error + "\"}");
+        sendResponse(request, response, Json.createObjectBuilder().add("error",error).build().toString());
     }
 
     /**
@@ -249,7 +250,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         imap.put(uuidStr, individual);
 
-        sendResponse(request, response, "{" + "\"uuid\":\"" + uuidStr + "\"}");
+        sendResponse(request, response, Json.createObjectBuilder().add("uuid",uuidStr).build().toString());
     }
 
     /**
