@@ -25,6 +25,8 @@ import com.idrsolutions.microservice.utils.HttpHelper;
 import com.idrsolutions.microservice.utils.SettingsValidator;
 
 import javax.json.Json;
+import javax.json.stream.JsonParser;
+import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -558,28 +560,63 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the conversion parameters.
+     * Get the conversion parameters from a JSON string.
      *
-     * @param settings a list of k/v pairs in the form:
-     * "key1:val1;key2:val2;etc..."
-     * @return a String array in the form [key1, val1, key2, val2, etc...]
+     * JSON Array values are ignored.
+     * Embedded objects have all k/v extracted (but the key for the object is lost).
+     *
+     * @param settings a JSON string of settings
+     * @return a Map<String,String> made from the JSON k/v
      */
-    protected static String[] getConversionParams(final String settings) {
-        if (settings == null) {
-            return null;
-        }
-        final String[] splits = settings.split(";");
-        final String[] result = new String[splits.length * 2];
-        int p = 0;
-        for (final String set : splits) {
-            final String[] ss = set.split(":");
-            if (ss.length < 2 && ss.length % 2 != 0) {
-                return null;
+    protected static Map<String, String> parseConversionParams(final String settings) {
+        final Map<String, String> out = new HashMap<>();
+
+        try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
+            String currentKey = null;
+            byte arrayDepth = 0;
+            while (jp.hasNext()) {
+                JsonParser.Event e = jp.next();
+                switch (e) {
+                    case START_ARRAY:
+                        arrayDepth++;
+                        break;
+                    case END_ARRAY:
+                        arrayDepth--;
+                        break;
+                    case KEY_NAME:
+                        currentKey = jp.getString();
+                        break;
+                    case VALUE_STRING:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, jp.getString());
+                        }
+                        break;
+                    case VALUE_NUMBER:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, String.valueOf(jp.getInt()));
+                        }
+                        break;
+                    case VALUE_TRUE:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, "true");
+                        }
+                        break;
+                    case VALUE_FALSE:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, "false");
+                        }
+                        break;
+                }
             }
-            result[p++] = ss[0];
-            result[p++] = ss[1];
+        } catch (final JsonParsingException jpe) {
+            Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, jpe);
+            if (jpe.getMessage() != null) {
+                out.put("com.idrsolutions.microservice.error", jpe.getMessage());
+            } else {
+                out.put("com.idrsolutions.microservice.error", "JsonParsingException");
+            }
         }
-        return result;
+        return out;
     }
 
     /**

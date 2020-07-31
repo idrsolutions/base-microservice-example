@@ -2,6 +2,7 @@ package com.idrsolutions.microservice.utils;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class SettingsValidator {
@@ -9,15 +10,13 @@ public class SettingsValidator {
     private final StringBuilder errorMessage = new StringBuilder();
     private final HashMap<String, String> paramMap = new HashMap<>();
 
-    public SettingsValidator(final String[] settings) {
-        if (settings != null) { //handle string based parameters
-            if (settings.length % 2 == 0) {
-                for (int i = 0; i < settings.length; i += 2) {
-                    paramMap.put(settings[i], settings[i + 1]);
-                }
-            } else {
-                errorMessage.append("Invalid length of String arguments, should be key:value; pairs.\n");
+    public SettingsValidator(final Map<String, String> settings) {
+        if (settings != null) {
+            if (settings.containsKey("com.idrsolutions.microservice.error")) {
+                errorMessage.append("Error encountered when parsing settings JSON: ")
+                        .append(settings.remove("com.idrsolutions.microservice.error"));
             }
+            paramMap.putAll(settings);
         }
     }
 
