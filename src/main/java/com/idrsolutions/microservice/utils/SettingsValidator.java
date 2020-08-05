@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * An abstract class used to validate the settings that will be passed into a conversion.
+ * A generic class used to validate the settings that will be passed into a conversion.
  * SettingsValidator will notify you if unexpected parameters are passed,
  * or if required parameters are missing.
  */
