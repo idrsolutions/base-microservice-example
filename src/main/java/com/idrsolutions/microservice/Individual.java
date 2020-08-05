@@ -21,6 +21,7 @@
 package com.idrsolutions.microservice;
 
 import java.util.Date;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -40,6 +41,7 @@ public class Individual {
     private String errorMessage;
     private Object customData;
 
+    private Map<String, String> conversionParams;
     private JsonObjectBuilder customValues = Json.createObjectBuilder();
 
     /**
@@ -200,6 +202,24 @@ public class Individual {
      */
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    /**
+     * Get the parameters used for the conversion (null if not set)
+     *
+     * @return the conversion parameters
+     */
+    public Map<String, String> getConversionParams() {
+        return conversionParams;
+    }
+
+    /**
+     * Store the parameters used for the conversion
+     *
+     * @param conversionParams the parameters to store
+     */
+    public void setConversionParams(Map<String, String> conversionParams) {
+        this.conversionParams = conversionParams;
     }
 
     /**

@@ -5,6 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * An abstract class used to validate the settings that will be passed into a conversion.
+ * SettingsValidator will notify you if unexpected parameters are passed,
+ * or if required parameters are missing.
+ */
 public class SettingsValidator {
 
     private final StringBuilder errorMessage = new StringBuilder();
@@ -12,10 +17,6 @@ public class SettingsValidator {
 
     public SettingsValidator(final Map<String, String> settings) {
         if (settings != null) {
-            if (settings.containsKey("com.idrsolutions.microservice.error")) {
-                errorMessage.append("Error encountered when parsing settings JSON: ")
-                        .append(settings.remove("com.idrsolutions.microservice.error"));
-            }
             paramMap.putAll(settings);
         }
     }

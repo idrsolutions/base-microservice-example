@@ -22,7 +22,6 @@ package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
-import com.idrsolutions.microservice.utils.SettingsValidator;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -124,7 +123,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     protected static void doError(final HttpServletRequest request, final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
-        sendResponse(request, response, Json.createObjectBuilder().add("error",error).build().toString());
+        sendResponse(request, response, Json.createObjectBuilder().add("error", error).build().toString());
     }
 
     /**
@@ -218,15 +217,12 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        final String settings = request.getParameter("settings");
-        final SettingsValidator validator = validateSettings(settings);
-        if (!validator.isValid()) {
-            doError(request, response, "Invalid settings detected.\n" + validator.getMessage(), 400);
-            return;
-        }
-
         final String uuidStr = UUID.randomUUID().toString();
         final Individual individual = new Individual(uuidStr);
+
+        if (!validateRequest(request, response, individual)) {
+            return;
+        }
 
         individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
 
@@ -252,7 +248,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         imap.put(uuidStr, individual);
 
-        sendResponse(request, response, Json.createObjectBuilder().add("uuid",uuidStr).build().toString());
+        sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }
 
     /**
@@ -457,7 +453,20 @@ public abstract class BaseServlet extends HttpServlet {
         });
     }
 
-    protected abstract SettingsValidator validateSettings(final String settings);
+    /**
+     * Validate the request to ensure suitable for the microservice conversion,
+     * failure will lead to the request stopping before starting the conversion.
+     *
+     * It is recommended to call doError and set the individual conversionParams
+     * from inside implementations of validateRequest.
+     *
+     * @param request the request for this conversion
+     * @param response the response object for the request
+     * @param individual the individual belonging to this conversion
+     * @return true if the request is valid, false if not
+     */
+    protected abstract boolean validateRequest(final HttpServletRequest request, final HttpServletResponse response,
+                                               final Individual individual);
 
     /**
      * This method converts a file and writes it to the output directory under
@@ -567,8 +576,9 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param settings a JSON string of settings
      * @return a Map<String,String> made from the JSON k/v
+     * @throws JsonParsingException on issue with JSON parsing
      */
-    protected static Map<String, String> parseConversionParams(final String settings) {
+    protected static Map<String, String> parseConversionParams(final String settings) throws JsonParsingException {
         final Map<String, String> out = new HashMap<>();
 
         try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
@@ -607,13 +617,6 @@ public abstract class BaseServlet extends HttpServlet {
                         }
                         break;
                 }
-            }
-        } catch (final JsonParsingException jpe) {
-            Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, jpe);
-            if (jpe.getMessage() != null) {
-                out.put("com.idrsolutions.microservice.error", jpe.getMessage());
-            } else {
-                out.put("com.idrsolutions.microservice.error", "JsonParsingException");
             }
         }
         return out;
