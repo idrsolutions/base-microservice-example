@@ -41,7 +41,7 @@ public class Individual {
     private String errorMessage;
     private Object customData;
 
-    private Map<String, String> conversionParams;
+    private Map<String, String> settings;
     private JsonObjectBuilder customValues = Json.createObjectBuilder();
 
     /**
@@ -65,7 +65,7 @@ public class Individual {
     public void doError(final int errorCode, final String errorMessage) {
         this.state = "error";
         this.errorCode = String.valueOf(errorCode);
-        this.errorMessage = errorMessage;
+        this.errorMessage = errorMessage == null ? "" : errorMessage;
     }
 
     /**
@@ -205,21 +205,21 @@ public class Individual {
     }
 
     /**
-     * Get the parameters used for the conversion (null if not set)
+     * Get the settings used for the conversion (null if not set)
      *
-     * @return the conversion parameters
+     * @return the conversion settings
      */
-    public Map<String, String> getConversionParams() {
-        return conversionParams;
+    public Map<String, String> getSettings() {
+        return settings;
     }
 
     /**
-     * Store the parameters used for the conversion
+     * Store the settings used for the conversion
      *
-     * @param conversionParams the parameters to store
+     * @param settings the settings to store
      */
-    public void setConversionParams(Map<String, String> conversionParams) {
-        this.conversionParams = conversionParams;
+    public void setSettings(final Map<String, String> settings) {
+        this.settings = settings;
     }
 
     /**

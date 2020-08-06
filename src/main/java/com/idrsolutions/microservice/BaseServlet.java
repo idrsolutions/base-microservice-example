@@ -578,8 +578,12 @@ public abstract class BaseServlet extends HttpServlet {
      * @return a Map<String,String> made from the JSON k/v
      * @throws JsonParsingException on issue with JSON parsing
      */
-    protected static Map<String, String> parseConversionParams(final String settings) throws JsonParsingException {
+    protected static Map<String, String> parseSettings(final String settings) throws JsonParsingException {
         final Map<String, String> out = new HashMap<>();
+
+        if (settings == null || settings.isEmpty()) {
+            return out;
+        }
 
         try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
             String currentKey = null;
