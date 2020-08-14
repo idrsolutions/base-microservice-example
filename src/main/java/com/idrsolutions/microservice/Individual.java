@@ -61,6 +61,7 @@ public class Individual {
      * wrong.
      *
      * @param errorCode the error code of the Individual
+     * @param errorMessage the error message of the Individual
      */
     public void doError(final int errorCode, final String errorMessage) {
         this.state = "error";

@@ -575,7 +575,7 @@ public abstract class BaseServlet extends HttpServlet {
      * Embedded objects have all k/v extracted (but the key for the object is lost).
      *
      * @param settings a JSON string of settings
-     * @return a Map<String,String> made from the JSON k/v
+     * @return a Map made from the JSON k/v
      * @throws JsonParsingException on issue with JSON parsing
      */
     protected static Map<String, String> parseSettings(final String settings) throws JsonParsingException {
