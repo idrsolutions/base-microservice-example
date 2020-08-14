@@ -4,7 +4,7 @@
     <groupId>com.idrsolutions</groupId>
     <artifactId>base-microservice-example</artifactId>
     <packaging>jar</packaging>
-    <version>7.0.0-alpha</version>
+    <version>8.0.0</version>
     <name>IDRsolutions Base Microservice Example</name>
     <description>Provides the shared classes used by IDRsolutions microservice examples.</description>
     <url>https://github.com/idrsolutions/base-microservice-example</url>
@@ -43,6 +43,11 @@
             <artifactId>javaee-api</artifactId>
             <version>7.0</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <version>1.1</version>
         </dependency>
     </dependencies>
     

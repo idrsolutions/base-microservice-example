@@ -23,6 +23,9 @@ package com.idrsolutions.microservice;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 
+import javax.json.Json;
+import javax.json.stream.JsonParser;
+import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
@@ -61,54 +64,54 @@ public abstract class BaseServlet extends HttpServlet {
     public static String getInputPath() {
         return INPUTPATH;
     }
-    
+
     /**
      * Get the location where the converter output is stored
-     * 
+     *
      * @return outputPath the path where output files is stored
      */
     public static String getOutputPath() {
         return OUTPUTPATH;
     }
-    
+
     /**
      * Get the time to live of individuals on the server (The duration that the 
      * information of an individual is kept on the server)
-     * 
+     *
      * @return individualTTL the time to live of an individual
      */
     public static long getIndividualTTL() {
         return individualTTL;
     }
-    
+
     /**
      * Set the location where input files is stored
-     * 
+     *
      * @param inputPath the path where input files is stored
      */
     public static void setInputPath(final String inputPath) {
         INPUTPATH = inputPath;
     }
-    
+
     /**
      * Set the location where the converter output is stored
-     * 
+     *
      * @param outputPath the path where output files is stored
      */
     public static void setOutputPath(final String outputPath) {
         OUTPUTPATH = outputPath;
     }
-    
+
     /**
      * Set the time to live of individuals on the server (The duration that the 
      * information of an individual is kept on the server)
-     * 
+     *
      * @param ttlDuration the time to live of an individual
      */
     public static void setIndividualTTL(final long ttlDuration) {
         individualTTL = ttlDuration;
     }
-    
+
     /**
      * Set an HTTP error code and message to the given response.
      *
@@ -120,7 +123,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     protected static void doError(final HttpServletRequest request, final HttpServletResponse response, final String error, final int status) {
         response.setStatus(status);
-        sendResponse(request, response, "{\"error\":\"" + error + "\"}");
+        sendResponse(request, response, Json.createObjectBuilder().add("error", error).build().toString());
     }
 
     /**
@@ -172,7 +175,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#allowCrossOrigin(HttpServletRequest,  HttpServletResponse)
+     * @see BaseServlet#allowCrossOrigin(HttpServletRequest, HttpServletResponse)
      */
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) {
@@ -217,17 +220,23 @@ public abstract class BaseServlet extends HttpServlet {
         final String uuidStr = UUID.randomUUID().toString();
         final Individual individual = new Individual(uuidStr);
 
+        if (!validateRequest(request, response, individual)) {
+            return;
+        }
+
         individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
+
+        final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
 
         switch (inputType) {
             case "upload":
-                if (!handleFileFromRequest(individual, request, response)) {
+                if (!handleFileFromRequest(individual, request, response, parameterMap)) {
                     return;
                 }
                 break;
 
             case "download":
-                if (!handleFileFromUrl(individual, request, response)) {
+                if (!handleFileFromUrl(individual, request, response, parameterMap)) {
                     return;
                 }
                 break;
@@ -239,7 +248,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         imap.put(uuidStr, individual);
 
-        sendResponse(request, response, "{" + "\"uuid\":\"" + uuidStr + "\"}");
+        sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }
 
     /**
@@ -298,9 +307,11 @@ public abstract class BaseServlet extends HttpServlet {
      * @param individual the individual associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
+     * @param params the parameter map from the request
      * @return true on success, false on failure
      */
-    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request,
+                                          final HttpServletResponse response, final Map<String, String[]> params) {
         final Part filePart;
         try {
             filePart = request.getPart("file");
@@ -345,7 +356,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File outputDir = createOutputDirectory(individual.getUuid());
 
-        addToQueue(individual, request.getParameterMap(), inputFile, outputDir, getContextURL(request));
+        addToQueue(individual, params, inputFile, outputDir, getContextURL(request));
 
         return true;
     }
@@ -359,9 +370,11 @@ public abstract class BaseServlet extends HttpServlet {
      * @param individual the individual associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
+     * @param params the parameter map from the request
      * @return true on initial success (url has been provided)
      */
-    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request, final HttpServletResponse response) {
+    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request,
+                                      final HttpServletResponse response, final Map<String, String[]> params) {
 
         String url = request.getParameter("url");
         if (url == null) {
@@ -395,7 +408,6 @@ public abstract class BaseServlet extends HttpServlet {
         // To allow use in lambda function.
         final String finalFilename = filename;
         final String contextUrl = getContextURL(request);
-        final Map<String, String[]> parameterMap = request.getParameterMap();
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
 
@@ -405,13 +417,13 @@ public abstract class BaseServlet extends HttpServlet {
                 final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, individual, fileBytes);
             } catch (IOException e) {
-                individual.doError(1200);
+                individual.doError(1200, "Could not get file from URL");
             } catch (SizeLimitExceededException e) {
-                individual.doError(1210);
+                individual.doError(1210, "File exceeds file size limit");
             }
 
             final File outputDir = createOutputDirectory(individual.getUuid());
-            addToQueue(individual, parameterMap, inputFile, outputDir, contextUrl);
+            addToQueue(individual, params, inputFile, outputDir, contextUrl);
         });
 
         return true;
@@ -427,20 +439,34 @@ public abstract class BaseServlet extends HttpServlet {
      * @param contextUrl the context url of the servlet
      */
     private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
-            final File outputDir, final String contextUrl) {
-        final Map<String, String[]> paramsCopy = new HashMap<>(params);
+                            final File outputDir, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
-                convert(individual, paramsCopy, inputFile, outputDir, contextUrl);
-                handleCallback(individual, paramsCopy);
+                convert(individual, params, inputFile, outputDir, contextUrl);
+                handleCallback(individual, params);
             } finally {
                 individual.setAlive(false);
             }
         });
     }
+
+    /**
+     * Validate the request to ensure suitable for the microservice conversion,
+     * failure will lead to the request stopping before starting the conversion.
+     *
+     * It is recommended to call doError and set the individual conversionParams
+     * from inside implementations of validateRequest.
+     *
+     * @param request the request for this conversion
+     * @param response the response object for the request
+     * @param individual the individual belonging to this conversion
+     * @return true if the request is valid, false if not
+     */
+    protected abstract boolean validateRequest(final HttpServletRequest request, final HttpServletResponse response,
+                                               final Individual individual);
 
     /**
      * This method converts a file and writes it to the output directory under
@@ -455,7 +481,7 @@ public abstract class BaseServlet extends HttpServlet {
      * pattern.
      */
     protected abstract void convert(Individual individual, Map<String, String[]> params,
-            File inputFile, File outputDir, String contextUrl);
+                                    File inputFile, File outputDir, String contextUrl);
 
     /**
      * Write the given file bytes to the output directory under filename.
@@ -543,28 +569,61 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the conversion parameters.
+     * Get the conversion parameters from a JSON string.
      *
-     * @param settings a list of k/v pairs in the form:
-     * "key1:val1;key2:val2;etc..."
-     * @return a String array in the form [key1, val1, key2, val2, etc...]
+     * JSON Array values are ignored.
+     * Embedded objects have all k/v extracted (but the key for the object is lost).
+     *
+     * @param settings a JSON string of settings
+     * @return a Map<String,String> made from the JSON k/v
+     * @throws JsonParsingException on issue with JSON parsing
      */
-    protected static String[] getConversionParams(final String settings) {
-        if (settings == null) {
-            return null;
+    protected static Map<String, String> parseSettings(final String settings) throws JsonParsingException {
+        final Map<String, String> out = new HashMap<>();
+
+        if (settings == null || settings.isEmpty()) {
+            return out;
         }
-        final String[] splits = settings.split(";");
-        final String[] result = new String[splits.length * 2];
-        int p = 0;
-        for (final String set : splits) {
-            final String[] ss = set.split(":");
-            if (ss.length < 2 && ss.length % 2 != 0) {
-                return null;
+
+        try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
+            String currentKey = null;
+            byte arrayDepth = 0;
+            while (jp.hasNext()) {
+                JsonParser.Event e = jp.next();
+                switch (e) {
+                    case START_ARRAY:
+                        arrayDepth++;
+                        break;
+                    case END_ARRAY:
+                        arrayDepth--;
+                        break;
+                    case KEY_NAME:
+                        currentKey = jp.getString();
+                        break;
+                    case VALUE_STRING:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, jp.getString());
+                        }
+                        break;
+                    case VALUE_NUMBER:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, String.valueOf(jp.getInt()));
+                        }
+                        break;
+                    case VALUE_TRUE:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, "true");
+                        }
+                        break;
+                    case VALUE_FALSE:
+                        if (currentKey != null && arrayDepth < 1) {
+                            out.put(currentKey, "false");
+                        }
+                        break;
+                }
             }
-            result[p++] = ss[0];
-            result[p++] = ss[1];
         }
-        return result;
+        return out;
     }
 
     /**
