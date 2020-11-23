@@ -49,6 +49,16 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
+    protected static final String TEMP_DIR;
+
+    static {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        if (!tempDir.endsWith("/") && !tempDir.endsWith("\\")) {
+            tempDir += System.getProperty("file.separator");
+        }
+        TEMP_DIR = tempDir;
+    }
+
     private static String INPUTPATH = "../docroot/input/";
     private static String OUTPUTPATH = "../docroot/output/";
     private static long individualTTL = 86400000L; // 24 hours
@@ -631,7 +641,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param dirPath the path to the folder to delete
      */
-    private static void deleteFolder(final File dirPath) {
+    protected static void deleteFolder(final File dirPath) {
         final File[] files = dirPath.listFiles();
         if (files != null) {
             for (final File file : files) {
@@ -641,5 +651,6 @@ public abstract class BaseServlet extends HttpServlet {
                 file.delete();
             }
         }
+        dirPath.delete();
     }
 }
