@@ -456,8 +456,8 @@ public abstract class BaseServlet extends HttpServlet {
         convertQueue.submit(() -> {
             try {
                 convert(individual, params, inputFile, outputDir, contextUrl);
-                handleCallback(individual, params);
             } finally {
+                handleCallback(individual, params);
                 individual.setAlive(false);
             }
         });
