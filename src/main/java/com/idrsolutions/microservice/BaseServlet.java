@@ -351,6 +351,11 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
+        if (originalFileName.indexOf('.') == -1) {
+            doError(request, response, "File has no extension", 400);
+            return false;
+        }
+
         final File inputFile;
         try {
             final InputStream fileContent = filePart.getInputStream();
@@ -396,6 +401,11 @@ public abstract class BaseServlet extends HttpServlet {
         // In case a filename cannot be parsed from the url.
         if (filename == null) {
             filename = "document.pdf";
+        }
+
+        if (filename.indexOf('.') == -1) {
+            doError(request, response, "File has no extension", 400);
+            return false;
         }
 
         final long fileSizeLimit = getFileSizeLimit(request);
