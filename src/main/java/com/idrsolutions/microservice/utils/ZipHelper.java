@@ -34,6 +34,7 @@ public class ZipHelper {
 
     /**
      * Zip a folder and all its contents to the destination zip.
+     * Includes a parent directory within the zip file with the name of the source folder.
      *
      * @param srcFolder the source folder to zip
      * @param destZipFile the name of the zip file to zip to
@@ -43,6 +44,14 @@ public class ZipHelper {
         zipFolder(srcFolder, destZipFile, true);
     }
 
+    /**
+     * Zip a folder and all its contents to the destination zip.
+     *
+     * @param srcFolder the source folder to zip
+     * @param destZipFile the name of the zip file to zip to
+     * @param createParentDirectoryInZip whether to include a base-level parent directory with the name of source folder
+     * @throws IOException if there is a problem writing or reading the file
+     */
     public static void zipFolder(final String srcFolder, final String destZipFile, final boolean createParentDirectoryInZip) throws IOException {
         final File zipOut = new File(destZipFile);
         if (!zipOut.exists()) {
@@ -63,8 +72,8 @@ public class ZipHelper {
      * given then calls 
      * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
      *
-     * @param path the path to the file to zip
-     * @param srcFile the name of the file to zip
+     * @param path the current location within the zip file (must include a trailing slash unless the value is empty)
+     * @param srcFile the path of the file to zip file
      * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
@@ -86,11 +95,10 @@ public class ZipHelper {
     }
 
     /**
-     * Zips the given folder (including all sub files and writes to
-     * ZipOutputStream.
+     * Zips the given folder (including all sub files and writes to ZipOutputStream.
      *
-     * @param path The path to the folder to recursively zip
-     * @param srcFolder the name of the folder to zip
+     * @param path the current location within the zip file
+     * @param srcFolder the path of the folder to add to the zip file
      * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
