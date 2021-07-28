@@ -34,7 +34,7 @@ public class ZipHelper {
 
     /**
      * Zip a folder and all its contents to the destination zip.
-     * Includes a parent directory within the zip file with the name of the source folder.
+     * Includes a parent directory within the zip file with the same name as the source folder.
      *
      * @param srcFolder the source folder to zip
      * @param destZipFile the name of the zip file to zip to
@@ -49,7 +49,7 @@ public class ZipHelper {
      *
      * @param srcFolder the source folder to zip
      * @param destZipFile the name of the zip file to zip to
-     * @param createParentDirectoryInZip whether to include a base-level parent directory with the name of source folder
+     * @param createParentDirectoryInZip whether to include a parent directory within the zip file with the same name as the source folder
      * @throws IOException if there is a problem writing or reading the file
      */
     public static void zipFolder(final String srcFolder, final String destZipFile, final boolean createParentDirectoryInZip) throws IOException {
