@@ -40,6 +40,10 @@ public class ZipHelper {
      * @throws IOException if there is a problem writing or reading the file
      */
     public static void zipFolder(final String srcFolder, final String destZipFile) throws IOException {
+        zipFolder(srcFolder, destZipFile, true);
+    }
+
+    public static void zipFolder(final String srcFolder, final String destZipFile, final boolean createParentDirectoryInZip) throws IOException {
         final File zipOut = new File(destZipFile);
         if (!zipOut.exists()) {
             zipOut.createNewFile();
@@ -48,7 +52,7 @@ public class ZipHelper {
         try (
                 final FileOutputStream fileWriter = new FileOutputStream(zipOut);
                 final ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
-            addFolderToZip("", srcFolder, zip);
+            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
             zip.flush();
             fileWriter.flush();
         }
@@ -66,14 +70,14 @@ public class ZipHelper {
      */
     private static void addFileToZip(final String path, final String srcFile, final ZipOutputStream zip) throws IOException {
 
-        final File folder = new File(srcFile);
-        if (folder.isDirectory()) {
-            addFolderToZip(path, srcFile, zip);
+        final File file = new File(srcFile);
+        if (file.isDirectory()) {
+            addFolderToZip(path + file.getName() + '/', srcFile, zip);
         } else {
             try (final FileInputStream in = new FileInputStream(srcFile)) {
                 final byte[] buf = new byte[1024];
                 int len;
-                zip.putNextEntry(new ZipEntry(path + "/" + folder.getName()));
+                zip.putNextEntry(new ZipEntry(path + file.getName()));
                 while ((len = in.read(buf)) > 0) {
                     zip.write(buf, 0, len);
                 }
@@ -95,11 +99,7 @@ public class ZipHelper {
         final String[] fileList = folder.list();
         if (fileList != null) {
             for (final String fileName : fileList) {
-                if (path.equals("")) {
-                    addFileToZip(folder.getName(), srcFolder + "/" + fileName, zip);
-                } else {
-                    addFileToZip(path + "/" + folder.getName(), srcFolder + "/" + fileName, zip);
-                }
+                addFileToZip(path, srcFolder + '/' + fileName, zip);
             }
         }
     }
