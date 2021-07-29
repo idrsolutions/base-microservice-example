@@ -97,7 +97,7 @@ public class ZipHelper {
     /**
      * Zips the given folder (including all sub files and writes to ZipOutputStream.
      *
-     * @param path the current location within the zip file
+     * @param path the current location within the zip file (must include a trailing slash unless the value is empty)
      * @param srcFolder the path of the folder to add to the zip file
      * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
