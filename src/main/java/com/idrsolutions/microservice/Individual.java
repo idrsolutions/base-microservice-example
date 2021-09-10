@@ -20,18 +20,21 @@
  */
 package com.idrsolutions.microservice;
 
-import java.util.Date;
-import java.util.Map;
+import com.idrsolutions.microservice.utils.DBHandler;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents a file conversion request to the server. Allows storage of UUID's
  * for identification of clients which are requesting file conversions.
  */
 public class Individual {
+    DBHandler database = BaseServlet.database;
 
     private final String uuid;
     private boolean isAlive = true;
@@ -42,7 +45,8 @@ public class Individual {
     private Object customData;
 
     private Map<String, String> settings;
-    private JsonObjectBuilder customValues = Json.createObjectBuilder();
+    private Map<String, String> customValues = new HashMap<>();
+    // private JsonObjectBuilder customValues = Json.createObjectBuilder();
 
     /**
      * Create individual with a specific UUID.
@@ -53,6 +57,17 @@ public class Individual {
         this.uuid = uuid;
         timestamp = new Date().getTime();
         state = "queued";
+
+        database.putIndividual(this);
+    }
+
+    public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage) {
+        this.uuid = uuid;
+        this.isAlive = isAlive;
+        this.timestamp = timestamp;
+        this.state = state;
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -67,6 +82,8 @@ public class Individual {
         this.state = "error";
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
+
+        database.executeUpdate();
     }
 
     /**
@@ -82,23 +99,17 @@ public class Individual {
             json.add("error", errorMessage);
         }
 
-        getCustomValues().forEach((s, jsonValue) -> json.add(s, jsonValue));
+        getCustomValues().forEach(json::add);
 
         return json.build().toString();
     }
 
-    /**
-     * Get the immutable JsonObject from customValues, while ensuring customValues
-     * keeps mutability
-     *
-     * @return an immutable JsonObject of customValues
-     */
-    private JsonObject getCustomValues() {
-        final JsonObject jsonObj = customValues.build();
-        customValues = Json.createObjectBuilder();
-        jsonObj.forEach((s, jsonValue) -> customValues.add(s, jsonValue));
+    public Map<String, String> getCustomValues() {
+        return customValues;
+    }
 
-        return jsonObj;
+    public void setCustomValues(Map<String, String> customValues) {
+        this.customValues = customValues;
     }
 
     /**
@@ -109,7 +120,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final String value) {
-        customValues.add(key, value);
+        customValues.put(key, value);
     }
 
     /**
@@ -120,7 +131,8 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final boolean value) {
-        customValues.add(key, value);
+        // customValues.add(key, value);
+        throw new NotImplementedException();
     }
 
     /**
@@ -131,7 +143,8 @@ public class Individual {
      * @param value the value mapped to the key
      */
     public void setValue(final String key, final int value) {
-        customValues.add(key, value);
+        // customValues.add(key, value);
+        throw new NotImplementedException();
     }
 
     /**

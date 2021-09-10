@@ -20,6 +20,7 @@
  */
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.utils.DBHandler;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 
@@ -29,6 +30,7 @@ import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,11 +63,14 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static String INPUTPATH = "../docroot/input/";
     private static String OUTPUTPATH = "../docroot/output/";
-    private static long individualTTL = 86400000L; // 24 hours
+    public static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
-    private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
+    protected static final DBHandler database = new DBHandler();
+
+    // private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
+
 
     /**
      * Get the location where input files is stored
@@ -170,13 +175,20 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        final Individual individual = imap.get(uuidStr);
-        if (individual == null) {
-            doError(request, response, "Unknown uuid: " + uuidStr, 404);
-            return;
-        }
+        try {
+            final Individual individual = database.getIndividual(uuidStr);
 
-        sendResponse(request, response, individual.toJsonString());
+            // final Individual individual = imap.get(uuidStr);
+            if (individual == null) {
+                doError(request, response, "Unknown uuid: " + uuidStr, 404);
+                return;
+            }
+
+            sendResponse(request, response, individual.toJsonString());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            doError(request, response, "Database failure", 500);
+        }
     }
 
     /**
@@ -219,7 +231,8 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
-        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
+        // imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
+        database.cleanOldEntries();
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -256,7 +269,7 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
         }
 
-        imap.put(uuidStr, individual);
+        // imap.put(uuidStr, individual);
 
         sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }
