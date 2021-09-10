@@ -397,7 +397,7 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        if (!(url.toLowerCase().startsWith("http://") || (url.toLowerCase().startsWith("https://"))) {
+        if (!url.toLowerCase().startsWith("http://") && !url.toLowerCase().startsWith("https://")) {
             doError(request, response, "Unsupported protocol", 400);
             return false;
         }
