@@ -396,6 +396,12 @@ public abstract class BaseServlet extends HttpServlet {
             doError(request, response, "No url given", 400);
             return false;
         }
+
+        if (!url.toLowerCase().startsWith("http://") && !url.toLowerCase().startsWith("https://")) {
+            doError(request, response, "Unsupported protocol", 400);
+            return false;
+        }
+
         // This does not need to be asynchronous
         String filename = DownloadHelper.getFileNameFromUrl(url);
         // In case a filename cannot be parsed from the url.
