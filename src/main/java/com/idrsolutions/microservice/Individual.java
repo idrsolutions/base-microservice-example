@@ -60,6 +60,18 @@ public class Individual {
         database.putIndividual(this);
     }
 
+    /**
+     * Create an individual, setting all of it's fields
+     * This is intended for use by the database, as this method does not create an entry inside the database
+     * @param uuid the uuid to identify this individual
+     * @param isAlive the alive state of the individual
+     * @param timestamp the creation timestamp of the indivual
+     * @param state the state of the individual
+     * @param errorCode the error code of the Individual
+     * @param errorMessage the error message of the Individual
+     * @param settings the conversion settings
+     * @param customValues the custom values
+     */
     public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage, HashMap<String, String> settings, HashMap<String, String> customValues) {
         this.uuid = uuid;
         this.isAlive = isAlive;
@@ -109,7 +121,15 @@ public class Individual {
         return json.build().toString();
     }
 
-    StringBuilder getMassInsertString(String table, Map<String, String> values) {
+    /**
+     * Gets an SQL string that will insert all the given values into the given table
+     * Returns null if the Values map is empty
+     *
+     * @param table The table for the INSERT operation to operate on
+     * @param values The values to be inserted into the table
+     * @return The complete sql string, or null if the value map is empty
+     */
+    public static String getMassInsertString(String table, Map<String, String> values) {
         if (values.isEmpty()) return null;
         StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
 
@@ -123,13 +143,17 @@ public class Individual {
             sqlString.append(" (\"").append(uuid).append("\", \"").append(key).append("\", \"").append(values.get(key)).append("\")");
         }
 
-        return sqlString;
+        return sqlString.toString();
     }
 
     public Map<String, String> getCustomValues() {
         return customValues;
     }
 
+    /**
+     * Store a HashMap containing custom values
+     * @param customValues The custom values
+     */
     public void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
 
@@ -139,7 +163,7 @@ public class Individual {
         );
 
         if (!customValues.isEmpty()) {
-            database.executeUpdate(getMassInsertString("customValues", customValues).toString());
+            database.executeUpdate(getMassInsertString("customValues", customValues));
         }
     }
 
@@ -294,7 +318,7 @@ public class Individual {
         );
 
         if (!settings.isEmpty()) {
-            database.executeUpdate(getMassInsertString("settings", this.settings).toString());
+            database.executeUpdate(getMassInsertString("settings", this.settings));
         }
     }
 

@@ -232,7 +232,7 @@ public abstract class BaseServlet extends HttpServlet {
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 
         // imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
-        database.cleanOldEntries();
+        database.cleanOldEntries(individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
