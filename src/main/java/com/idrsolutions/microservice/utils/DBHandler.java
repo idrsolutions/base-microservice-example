@@ -37,6 +37,7 @@ public class DBHandler {
     private void setupDatabase() throws SQLException {
         // Clear Tables
         statement.executeUpdate("DROP TABLE IF EXISTS settings");
+        statement.executeUpdate("DROP TABLE IF EXISTS customValues");
         statement.executeUpdate("DROP TABLE IF EXISTS conversions");
 
         // Create Tables
@@ -47,8 +48,6 @@ public class DBHandler {
                                         "state VARCHAR(10), " +
                                         "errorCode VARCHAR(5), " +
                                         "errorMessage VARCHAR(255), " +
-                                        "previewURL TEXT," +
-                                        "downloadURL TEXT," +
                                         "PRIMARY KEY (uuid)" +
                                 ")");
         statement.executeUpdate("CREATE TABLE settings (" +
@@ -58,27 +57,47 @@ public class DBHandler {
                                         "PRIMARY KEY (uuid, key), " +
                                         "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
                                 ")");
+        statement.executeUpdate("CREATE TABLE customValues (" +
+                                        "uuid VARCHAR(36), " +
+                                        "key VARCHAR(70), " +
+                                        "value TEXT, " +
+                                        "PRIMARY KEY (uuid, key), " +
+                                        "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                                ")");
 
     }
 
     public Individual getIndividual(String id) throws SQLException {
-        ResultSet theIndividual = statement.executeQuery("SELECT * FROM conversions WHERE uuid=\"" + id + "\";");
-        Individual individual = new Individual(theIndividual.getString("uuid"),
-                theIndividual.getBoolean("isAlive"),
-                theIndividual.getLong("theTime"),
-                theIndividual.getString("state"),
-                theIndividual.getString("errorCode"),
-                theIndividual.getString("errorMessage")
-        );
-
         ResultSet theSettings = statement.executeQuery("SELECT key, value FROM settings WHERE uuid=\"" + id + "\";");
         HashMap<String, String> settings = new HashMap<>();
 
         while (theSettings.next()) {
             settings.put(theSettings.getString("key"), theSettings.getString("value"));
         }
+        theSettings.close();
 
-        individual.setSettings(settings);
+        ResultSet theCustomValues = statement.executeQuery("SELECT key, value FROM customValues WHERE uuid=\"" + id + "\";");
+        HashMap<String, String> customValues = new HashMap<>();
+
+        while (theCustomValues.next()) {
+            customValues.put(theCustomValues.getString("key"), theCustomValues.getString("value"));
+        }
+
+        ResultSet theIndividual = statement.executeQuery("SELECT * FROM conversions WHERE uuid=\"" + id + "\";");
+
+        if (!theIndividual.next()) return null;
+
+        Individual individual = new Individual(theIndividual.getString("uuid"),
+                theIndividual.getBoolean("isAlive"),
+                theIndividual.getLong("theTime"),
+                theIndividual.getString("state"),
+                theIndividual.getString("errorCode"),
+                theIndividual.getString("errorMessage"),
+                settings,
+                customValues
+        );
+
+        theIndividual.close();
 
         return individual;
     }
@@ -93,7 +112,7 @@ public class DBHandler {
 
     public void putIndividual(Individual individual) {
         try {
-            statement.executeUpdate("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (" + individual.getUuid() + ", " + individual.isAlive() + ", " + individual.getTimestamp() + ", " + individual.getState() + ", " + individual.getErrorCode() + ", " + individual.getErrorMessage() + ", " + ")");
+            statement.executeUpdate("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (\"" + individual.getUuid() + "\", \"" + individual.isAlive() + "\", \"" + individual.getTimestamp() + "\", \"" + individual.getState() + "\", \"" + individual.getErrorCode() + "\", \"" + individual.getErrorMessage() + "\")");
         } catch (SQLException e) {
             e.printStackTrace();
         }

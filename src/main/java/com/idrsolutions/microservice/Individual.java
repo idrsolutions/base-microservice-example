@@ -21,7 +21,6 @@
 package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.utils.DBHandler;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
@@ -61,13 +60,15 @@ public class Individual {
         database.putIndividual(this);
     }
 
-    public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage) {
+    public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage, HashMap<String, String> settings, HashMap<String, String> customValues) {
         this.uuid = uuid;
         this.isAlive = isAlive;
         this.timestamp = timestamp;
         this.state = state;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
+        this.settings = settings;
+        this.customValues = customValues;
     }
 
     /**
@@ -83,7 +84,11 @@ public class Individual {
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
 
-        database.executeUpdate();
+        database.executeUpdate(
+                "Update conversions " +
+                "SET state=\"" + this.state + "\", errorCode=\"" + this.errorCode + "\", errorMessage=\"" + this.errorMessage + "\" " +
+                "WHERE uuid=\"" + this.uuid + "\""
+        );
     }
 
     /**
@@ -104,12 +109,38 @@ public class Individual {
         return json.build().toString();
     }
 
+    StringBuilder getMassInsertString(String table, Map<String, String> values) {
+        if (values.isEmpty()) return null;
+        StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
+
+        boolean first = true;
+        for (String key : values.keySet()) {
+            if (first) {
+                first = false;
+            } else {
+                sqlString.append(",");
+            }
+            sqlString.append(" (\"").append(uuid).append("\", \"").append(key).append("\", \"").append(values.get(key)).append("\")");
+        }
+
+        return sqlString;
+    }
+
     public Map<String, String> getCustomValues() {
         return customValues;
     }
 
     public void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
+
+        database.executeUpdate(
+                "DELETE FROM customValues " +
+                        "WHERE uuid=\"" + uuid + "\";"
+        );
+
+        if (!customValues.isEmpty()) {
+            database.executeUpdate(getMassInsertString("customValues", customValues).toString());
+        }
     }
 
     /**
@@ -121,30 +152,41 @@ public class Individual {
      */
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
+
+        database.executeUpdate(
+                "INSERT INTO customValues " +
+                        "VALUES (\"" + uuid + "\", \"" + key + "\", \"" + value + "\")"
+        );
     }
 
     /**
      * Adds a key value pair to the individual to pass to the client in GET
      * requests and callbacks.
      *
+     * @see com.idrsolutions.microservice.Individual#setValue(String, String)
+     *
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
+    @Deprecated
     public void setValue(final String key, final boolean value) {
         // customValues.add(key, value);
-        throw new NotImplementedException();
+        setValue(key, String.valueOf(value));
     }
 
     /**
      * Adds a key value pair to the individual to pass to the client in GET
      * requests and callbacks.
      *
+     * @see com.idrsolutions.microservice.Individual#setValue(String, String)
+     *
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
+    @Deprecated
     public void setValue(final String key, final int value) {
         // customValues.add(key, value);
-        throw new NotImplementedException();
+        setValue(key, String.valueOf(value));
     }
 
     /**
@@ -174,6 +216,12 @@ public class Individual {
      */
     public void setAlive(boolean alive) {
         isAlive = alive;
+
+        database.executeUpdate(
+                "Update conversions " +
+                        "SET isAlive=\"" + this.isAlive + "\" " +
+                        "WHERE uuid=\"" + this.uuid + "\""
+        );
     }
 
     /**
@@ -194,6 +242,11 @@ public class Individual {
      */
     public void setState(String state) {
         this.state = state;
+        database.executeUpdate(
+                "Update conversions " +
+                        "SET state=\"" + this.state + "\" " +
+                        "WHERE uuid=\"" + this.uuid + "\""
+        );
     }
 
     /**
@@ -229,11 +282,20 @@ public class Individual {
 
     /**
      * Store the settings used for the conversion
+     *  @param settings the settings to store
      *
-     * @param settings the settings to store
      */
     public void setSettings(final Map<String, String> settings) {
         this.settings = settings;
+
+        database.executeUpdate(
+                "DELETE FROM settings " +
+                        "WHERE uuid=\"" + uuid + "\";"
+        );
+
+        if (!settings.isEmpty()) {
+            database.executeUpdate(getMassInsertString("settings", this.settings).toString());
+        }
     }
 
     /**
