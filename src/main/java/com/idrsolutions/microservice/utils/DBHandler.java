@@ -66,31 +66,34 @@ public class DBHandler {
      * @throws SQLException an SQL Exception
      */
     public Individual getIndividual(String id) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            ResultSet individualResultSet = statement.executeQuery("SELECT * FROM conversions WHERE uuid=\"" + id + "\";");
+        try (PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
+             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;");
+             PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {
+            individualStatement.setString(1, id);
+            ResultSet individualResultSet = individualStatement.executeQuery();
 
-            // Return null if the individual doesn't exist
-            if (!individualResultSet.next()) return null;
+            if (!individualResultSet.next()) {
+                return null;
+            }
 
             // Get the hashmaps from the other tables
-            ResultSet settingsResultSet = statement.executeQuery("SELECT key, value FROM settings WHERE uuid=\"" + id + "\";");
+            settingsStatement.setString(1, id);
+            ResultSet settingsResultSet = settingsStatement.executeQuery();
             HashMap<String, String> settings = new HashMap<>();
 
             while (settingsResultSet.next()) {
                 settings.put(settingsResultSet.getString("key"), settingsResultSet.getString("value"));
             }
-            settingsResultSet.close();
 
-            ResultSet customValuesResultSet = statement.executeQuery("SELECT key, value FROM customValues WHERE uuid=\"" + id + "\";");
+            customValuesStatement.setString(1, id);
+            ResultSet customValuesResultSet = customValuesStatement.executeQuery();
             HashMap<String, String> customValues = new HashMap<>();
 
             while (customValuesResultSet.next()) {
                 customValues.put(customValuesResultSet.getString("key"), customValuesResultSet.getString("value"));
             }
 
-            customValuesResultSet.close();
-
-            Individual individual = new Individual(individualResultSet.getString("uuid"),
+            return new Individual(individualResultSet.getString("uuid"),
                     individualResultSet.getBoolean("isAlive"),
                     individualResultSet.getLong("theTime"),
                     individualResultSet.getString("state"),
@@ -99,11 +102,6 @@ public class DBHandler {
                     settings,
                     customValues
             );
-
-            individualResultSet.close();
-            statement.close();
-
-            return individual;
         }
     }
 
