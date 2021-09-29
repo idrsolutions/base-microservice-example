@@ -17,7 +17,6 @@ public class DBHandler {
             setupDatabase();
         } catch (SQLException | ClassNotFoundException err) {
             err.printStackTrace();
-            System.exit(-1);
         }
     }
 
