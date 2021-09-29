@@ -55,8 +55,6 @@ public class Individual {
         this.uuid = uuid;
         timestamp = new Date().getTime();
         state = "queued";
-
-        database.putIndividual(this);
     }
 
     /**
@@ -95,11 +93,7 @@ public class Individual {
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
 
-        database.executeUpdate(
-                "Update conversions " +
-                "SET state=\"" + this.state + "\", errorCode=\"" + this.errorCode + "\", errorMessage=\"" + this.errorMessage + "\" " +
-                "WHERE uuid=\"" + this.uuid + "\""
-        );
+        database.doInvidivualError(uuid, state, errorCode, errorMessage);
     }
 
     /**
@@ -156,14 +150,7 @@ public class Individual {
     public void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
 
-        database.executeUpdate(
-                "DELETE FROM customValues " +
-                        "WHERE uuid=\"" + uuid + "\";"
-        );
-
-        if (!customValues.isEmpty()) {
-            database.executeUpdate(getMassInsertString("customValues", customValues));
-        }
+        database.setIndividualCustomValues(uuid, customValues);
     }
 
     /**
@@ -176,10 +163,7 @@ public class Individual {
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
 
-        database.executeUpdate(
-                "INSERT INTO customValues " +
-                        "VALUES (\"" + uuid + "\", \"" + key + "\", \"" + value + "\")"
-        );
+        database.setIndividualCustomValue(uuid, key, value);
     }
 
     /**
@@ -238,11 +222,7 @@ public class Individual {
     public void setAlive(boolean alive) {
         isAlive = alive;
 
-        database.executeUpdate(
-                "Update conversions " +
-                        "SET isAlive=\"" + this.isAlive + "\" " +
-                        "WHERE uuid=\"" + this.uuid + "\""
-        );
+        database.setIndividualAlive(uuid, alive);
     }
 
     /**
@@ -263,11 +243,8 @@ public class Individual {
      */
     public void setState(String state) {
         this.state = state;
-        database.executeUpdate(
-                "Update conversions " +
-                        "SET state=\"" + this.state + "\" " +
-                        "WHERE uuid=\"" + this.uuid + "\""
-        );
+
+        database.setIndividualState(uuid, state);
     }
 
     /**
@@ -309,14 +286,7 @@ public class Individual {
     public void setSettings(final Map<String, String> settings) {
         this.settings = settings;
 
-        database.executeUpdate(
-                "DELETE FROM settings " +
-                        "WHERE uuid=\"" + uuid + "\";"
-        );
-
-        if (!settings.isEmpty()) {
-            database.executeUpdate(getMassInsertString("settings", this.settings));
-        }
+        database.setIndividualSettings(uuid, settings);
     }
 
     /**
@@ -334,6 +304,17 @@ public class Individual {
      * @param customData the custom data to store
      */
     public void setCustomData(Object customData) {
+        this.customData = customData;
+
+        // TODO: Database stuff
+    }
+
+    /**
+     * Store custom data in the Individual without updating the database
+     *
+     * @param customData the custom data to store
+     */
+    public void setCustomDataPreDatabase(Object customData) {
         this.customData = customData;
     }
 

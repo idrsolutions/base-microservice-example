@@ -243,7 +243,7 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
+        individual.setCustomDataPreDatabase(request.getAttribute("com.idrsolutions.microservice.customData"));
 
         final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
 
@@ -264,6 +264,8 @@ public abstract class BaseServlet extends HttpServlet {
                 doError(request, response, "Unrecognised input type", 400);
                 return;
         }
+
+        database.putIndividual(individual);
 
         sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }

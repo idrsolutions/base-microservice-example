@@ -6,6 +6,7 @@ import com.idrsolutions.microservice.Individual;
 import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 public class DBHandler {
     Connection connection;
@@ -105,18 +106,7 @@ public class DBHandler {
         }
     }
 
-    /**
-     * Executes the given SQL Update String
-     * @see Statement#executeUpdate(String)
-     * @param sql
-     */
-    public void executeUpdate(String sql) {
-        try {
-            statement.executeUpdate(sql);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+
 
     /**
      * Inserts the given individual into the database
@@ -147,6 +137,75 @@ public class DBHandler {
             statement.executeUpdate("DELETE FROM conversions WHERE theTime < " + (new Date().getTime() - TTL));
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void setIndividualCustomValue(String uuid, String key, String value) {
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO customValues VALUES (?, ?, ?)")) {
+            statement.setString(1, uuid);
+            statement.setString(2, key);
+            statement.setString(3, value);
+            statement.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+    }
+
+    public void setIndividualAlive(String uuid, boolean alive) {
+        try (PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
+            statement.setBoolean(1, alive);
+            statement.setString(2, uuid);
+            statement.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+    }
+
+    public void setIndividualState(String uuid, String state) {
+        try (PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
+            statement.setString(1, state);
+            statement.setString(2, uuid);
+            statement.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+    }
+
+    private void setIndividualMap(String uuid, String table, Map<String, String> map) {
+        try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM ? WHERE uuid = ?");
+             PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO ? VALUES (?, ?, ?)")) {
+            deleteStatement.setString(1, table);
+            deleteStatement.setString(2, uuid);
+            deleteStatement.executeUpdate();
+
+            insertStatement.setString(1, table);
+            insertStatement.setString(2, uuid);
+            for (String key : map.keySet()) {
+                insertStatement.setString(3, key);
+                insertStatement.setString(4, map.get(key));
+                insertStatement.executeUpdate();
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+    }
+
+    public void setIndividualSettings(String uuid, Map<String, String> settings) {
+        setIndividualMap(uuid, "settings", settings);
+    }
+
+    public void setIndividualCustomValues(String uuid, Map<String, String> customValues) {
+        setIndividualMap(uuid, "customValues", customValues);
+    }
+
+    public void doInvidivualError(String uuid, String state, int errorCode, String errorMessage) {
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
+            statement.setString(1, state);
+            statement.setInt(2, errorCode);
+            statement.setString(3, errorMessage);
+            statement.setString(4, uuid);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
 }
