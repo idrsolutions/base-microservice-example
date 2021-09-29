@@ -63,7 +63,7 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static String INPUTPATH = "../docroot/input/";
     private static String OUTPUTPATH = "../docroot/output/";
-    public static long individualTTL = 86400000L; // 24 hours
+    private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
