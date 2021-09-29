@@ -26,18 +26,6 @@ public class DBHandler {
     }
 
     /**
-     * Closes the database connections
-     */
-    public void shutdown() {
-        try {
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Sets up the tables, clearing out any existing tables and recreating it
      * @throws SQLException An sql Exception
      */
