@@ -9,13 +9,11 @@ import java.util.HashMap;
 
 public class DBHandler {
     Connection connection;
-    Statement statement;
 
     public DBHandler() {
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:database.db");
-            statement = connection.createStatement();
             setupDatabase();
         } catch (SQLException | ClassNotFoundException err) {
             err.printStackTrace();
@@ -28,36 +26,38 @@ public class DBHandler {
      * @throws SQLException An sql Exception
      */
     private void setupDatabase() throws SQLException {
-        // Clear Tables
-        statement.executeUpdate("DROP TABLE IF EXISTS settings");
-        statement.executeUpdate("DROP TABLE IF EXISTS customValues");
-        statement.executeUpdate("DROP TABLE IF EXISTS conversions");
+        try (Statement statement = connection.createStatement()) {
+            // Clear Tables
+            statement.executeUpdate("DROP TABLE IF EXISTS settings");
+            statement.executeUpdate("DROP TABLE IF EXISTS customValues");
+            statement.executeUpdate("DROP TABLE IF EXISTS conversions");
 
-        // Create Tables
-        statement.executeUpdate("CREATE TABLE conversions (" +
-                                        "uuid VARCHAR(36), " +
-                                        "isAlive BOOLEAN, " +
-                                        "theTime UNSIGNED BIGINT(255), " +
-                                        "state VARCHAR(10), " +
-                                        "errorCode VARCHAR(5), " +
-                                        "errorMessage VARCHAR(255), " +
-                                        "PRIMARY KEY (uuid)" +
-                                ")");
-        // Setup many to one relation with Cascade Delete to clear them out when the reference is deleted
-        statement.executeUpdate("CREATE TABLE settings (" +
-                                        "uuid VARCHAR(36), " +
-                                        "key VARCHAR(70), " +
-                                        "value VARCHAR(255), " +
-                                        "PRIMARY KEY (uuid, key), " +
-                                        "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
-                                ")");
-        statement.executeUpdate("CREATE TABLE customValues (" +
-                                        "uuid VARCHAR(36), " +
-                                        "key VARCHAR(70), " +
-                                        "value TEXT, " +
-                                        "PRIMARY KEY (uuid, key), " +
-                                        "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
-                                ")");
+            // Create Tables
+            statement.executeUpdate("CREATE TABLE conversions (" +
+                    "uuid VARCHAR(36), " +
+                    "isAlive BOOLEAN, " +
+                    "theTime UNSIGNED BIGINT(255), " +
+                    "state VARCHAR(10), " +
+                    "errorCode VARCHAR(5), " +
+                    "errorMessage VARCHAR(255), " +
+                    "PRIMARY KEY (uuid)" +
+                    ")");
+            // Setup many-to-one relation with Cascade Delete to clear them out when the reference is deleted
+            statement.executeUpdate("CREATE TABLE settings (" +
+                    "uuid VARCHAR(36), " +
+                    "key VARCHAR(70), " +
+                    "value VARCHAR(255), " +
+                    "PRIMARY KEY (uuid, key), " +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    ")");
+            statement.executeUpdate("CREATE TABLE customValues (" +
+                    "uuid VARCHAR(36), " +
+                    "key VARCHAR(70), " +
+                    "value TEXT, " +
+                    "PRIMARY KEY (uuid, key), " +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    ")");
+        }
     }
 
     /**
@@ -67,42 +67,45 @@ public class DBHandler {
      * @throws SQLException an SQL Exception
      */
     public Individual getIndividual(String id) throws SQLException {
-        ResultSet theIndividual = statement.executeQuery("SELECT * FROM conversions WHERE uuid=\"" + id + "\";");
+        try (Statement statement = connection.createStatement()) {
+            ResultSet individualResultSet = statement.executeQuery("SELECT * FROM conversions WHERE uuid=\"" + id + "\";");
 
-        // Return null if the individual doesn't exist
-        if (!theIndividual.next()) return null;
+            // Return null if the individual doesn't exist
+            if (!individualResultSet.next()) return null;
 
-        // Get the hashmaps from the other tables
-        ResultSet theSettings = statement.executeQuery("SELECT key, value FROM settings WHERE uuid=\"" + id + "\";");
-        HashMap<String, String> settings = new HashMap<>();
+            // Get the hashmaps from the other tables
+            ResultSet settingsResultSet = statement.executeQuery("SELECT key, value FROM settings WHERE uuid=\"" + id + "\";");
+            HashMap<String, String> settings = new HashMap<>();
 
-        while (theSettings.next()) {
-            settings.put(theSettings.getString("key"), theSettings.getString("value"));
+            while (settingsResultSet.next()) {
+                settings.put(settingsResultSet.getString("key"), settingsResultSet.getString("value"));
+            }
+            settingsResultSet.close();
+
+            ResultSet customValuesResultSet = statement.executeQuery("SELECT key, value FROM customValues WHERE uuid=\"" + id + "\";");
+            HashMap<String, String> customValues = new HashMap<>();
+
+            while (customValuesResultSet.next()) {
+                customValues.put(customValuesResultSet.getString("key"), customValuesResultSet.getString("value"));
+            }
+
+            customValuesResultSet.close();
+
+            Individual individual = new Individual(individualResultSet.getString("uuid"),
+                    individualResultSet.getBoolean("isAlive"),
+                    individualResultSet.getLong("theTime"),
+                    individualResultSet.getString("state"),
+                    individualResultSet.getString("errorCode"),
+                    individualResultSet.getString("errorMessage"),
+                    settings,
+                    customValues
+            );
+
+            individualResultSet.close();
+            statement.close();
+
+            return individual;
         }
-        theSettings.close();
-
-        ResultSet theCustomValues = statement.executeQuery("SELECT key, value FROM customValues WHERE uuid=\"" + id + "\";");
-        HashMap<String, String> customValues = new HashMap<>();
-
-        while (theCustomValues.next()) {
-            customValues.put(theCustomValues.getString("key"), theCustomValues.getString("value"));
-        }
-
-        theCustomValues.close();
-
-        Individual individual = new Individual(theIndividual.getString("uuid"),
-                theIndividual.getBoolean("isAlive"),
-                theIndividual.getLong("theTime"),
-                theIndividual.getString("state"),
-                theIndividual.getString("errorCode"),
-                theIndividual.getString("errorMessage"),
-                settings,
-                customValues
-        );
-
-        theIndividual.close();
-
-        return individual;
     }
 
     /**
@@ -123,13 +126,13 @@ public class DBHandler {
      * @param individual the individual to insert into the database
      */
     public void putIndividual(Individual individual) {
-        try {
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (\"" + individual.getUuid() + "\", \"" + individual.isAlive() + "\", \"" + individual.getTimestamp() + "\", \"" + individual.getState() + "\", \"" + individual.getErrorCode() + "\", \"" + individual.getErrorMessage() + "\")");
-            String settings = Individual.getMassInsertString("settings", individual.getSettings());
+            String settings = individual.getMassInsertString("settings", individual.getSettings());
             if (settings != null) {
                 statement.executeUpdate(settings);
             }
-            String customValues = Individual.getMassInsertString("customValues", individual.getCustomValues());
+            String customValues = individual.getMassInsertString("customValues", individual.getCustomValues());
             if (customValues != null) {
                 statement.executeUpdate(customValues);
             }
@@ -143,7 +146,7 @@ public class DBHandler {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     public void cleanOldEntries(long TTL) {
-        try {
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("DELETE FROM conversions WHERE theTime < " + (new Date().getTime() - TTL));
         } catch (SQLException e) {
             e.printStackTrace();
