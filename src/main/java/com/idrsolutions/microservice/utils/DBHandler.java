@@ -1,13 +1,11 @@
 
 package com.idrsolutions.microservice.utils;
 
-import com.idrsolutions.microservice.BaseServlet;
 import com.idrsolutions.microservice.Individual;
 
 import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.UUID;
 
 public class DBHandler {
     Connection connection;

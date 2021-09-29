@@ -45,7 +45,6 @@ public class Individual {
 
     private Map<String, String> settings;
     private Map<String, String> customValues = new HashMap<>();
-    // private JsonObjectBuilder customValues = Json.createObjectBuilder();
 
     /**
      * Create individual with a specific UUID.
@@ -129,7 +128,7 @@ public class Individual {
      * @param values The values to be inserted into the table
      * @return The complete sql string, or null if the value map is empty
      */
-    public static String getMassInsertString(String table, Map<String, String> values) {
+    public String getMassInsertString(String table, Map<String, String> values) {
         if (values.isEmpty()) return null;
         StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
 
@@ -194,7 +193,6 @@ public class Individual {
      */
     @Deprecated
     public void setValue(final String key, final boolean value) {
-        // customValues.add(key, value);
         setValue(key, String.valueOf(value));
     }
 
@@ -209,7 +207,6 @@ public class Individual {
      */
     @Deprecated
     public void setValue(final String key, final int value) {
-        // customValues.add(key, value);
         setValue(key, String.valueOf(value));
     }
 
