@@ -16,7 +16,7 @@ public class DBHandler {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:database.db");
             setupDatabase();
-        } catch (SQLException | ClassNotFoundException err) {
+        } catch (final SQLException | ClassNotFoundException err) {
             err.printStackTrace();
         }
     }
@@ -26,7 +26,7 @@ public class DBHandler {
      * @throws SQLException An sql Exception
      */
     private void setupDatabase() throws SQLException {
-        try (Statement statement = connection.createStatement()) {
+        try (final Statement statement = connection.createStatement()) {
             // Clear Tables
             statement.executeUpdate("DROP TABLE IF EXISTS settings");
             statement.executeUpdate("DROP TABLE IF EXISTS customValues");
@@ -67,11 +67,12 @@ public class DBHandler {
      * @throws SQLException an SQL Exception
      */
     public Individual getIndividual(String id) throws SQLException {
-        try (PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
-             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;");
-             PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {
+        try (final PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
+             final PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;");
+             final PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {
             individualStatement.setString(1, id);
-            ResultSet individualResultSet = individualStatement.executeQuery();
+
+            final ResultSet individualResultSet = individualStatement.executeQuery();
 
             if (!individualResultSet.next()) {
                 return null;
@@ -79,7 +80,8 @@ public class DBHandler {
 
             // Get the hashmaps from the other tables
             settingsStatement.setString(1, id);
-            ResultSet settingsResultSet = settingsStatement.executeQuery();
+
+            final ResultSet settingsResultSet = settingsStatement.executeQuery();
             HashMap<String, String> settings = new HashMap<>();
 
             while (settingsResultSet.next()) {
@@ -87,7 +89,8 @@ public class DBHandler {
             }
 
             customValuesStatement.setString(1, id);
-            ResultSet customValuesResultSet = customValuesStatement.executeQuery();
+
+            final ResultSet customValuesResultSet = customValuesStatement.executeQuery();
             HashMap<String, String> customValues = new HashMap<>();
 
             while (customValuesResultSet.next()) {
@@ -113,9 +116,9 @@ public class DBHandler {
      * @param individual the individual to insert into the database
      */
     public void putIndividual(Individual individual) {
-        try (Statement statement = connection.createStatement()) {
+        try (final Statement statement = connection.createStatement()) {
             statement.executeUpdate("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (\"" + individual.getUuid() + "\", \"" + individual.isAlive() + "\", \"" + individual.getTimestamp() + "\", \"" + individual.getState() + "\", \"" + individual.getErrorCode() + "\", \"" + individual.getErrorMessage() + "\")");
-            String settings = individual.getMassInsertString("settings", individual.getSettings());
+            final String settings = individual.getMassInsertString("settings", individual.getSettings());
             if (settings != null) {
                 statement.executeUpdate(settings);
             }
@@ -123,7 +126,7 @@ public class DBHandler {
             if (customValues != null) {
                 statement.executeUpdate(customValues);
             }
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             e.printStackTrace();
         }
     }
@@ -133,46 +136,46 @@ public class DBHandler {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     public void cleanOldEntries(long TTL) {
-        try (Statement statement = connection.createStatement()) {
+        try (final Statement statement = connection.createStatement()) {
             statement.executeUpdate("DELETE FROM conversions WHERE theTime < " + (new Date().getTime() - TTL));
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             e.printStackTrace();
         }
     }
 
     public void setIndividualCustomValue(String uuid, String key, String value) {
-        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO customValues VALUES (?, ?, ?)")) {
+        try (final PreparedStatement statement = connection.prepareStatement("INSERT INTO customValues VALUES (?, ?, ?)")) {
             statement.setString(1, uuid);
             statement.setString(2, key);
             statement.setString(3, value);
             statement.executeUpdate();
-        } catch (SQLException err) {
+        } catch (final SQLException err) {
             err.printStackTrace();
         }
     }
 
     public void setIndividualAlive(String uuid, boolean alive) {
-        try (PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
+        try (final PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
             statement.setBoolean(1, alive);
             statement.setString(2, uuid);
             statement.executeUpdate();
-        } catch (SQLException err) {
+        } catch (final SQLException err) {
             err.printStackTrace();
         }
     }
 
     public void setIndividualState(String uuid, String state) {
-        try (PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
+        try (final PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
             statement.setString(1, state);
             statement.setString(2, uuid);
             statement.executeUpdate();
-        } catch (SQLException err) {
+        } catch (final SQLException err) {
             err.printStackTrace();
         }
     }
 
     private void setIndividualMap(String uuid, String table, Map<String, String> map) {
-        try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM ? WHERE uuid = ?");
+        try (final PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM ? WHERE uuid = ?");
              PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO ? VALUES (?, ?, ?)")) {
             deleteStatement.setString(1, table);
             deleteStatement.setString(2, uuid);
@@ -185,7 +188,7 @@ public class DBHandler {
                 insertStatement.setString(4, map.get(key));
                 insertStatement.executeUpdate();
             }
-        } catch (SQLException err) {
+        } catch (final SQLException err) {
             err.printStackTrace();
         }
     }
@@ -199,12 +202,12 @@ public class DBHandler {
     }
 
     public void doInvidivualError(String uuid, String state, int errorCode, String errorMessage) {
-        try (PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
+        try (final PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
             statement.setString(1, state);
             statement.setInt(2, errorCode);
             statement.setString(3, errorMessage);
             statement.setString(4, uuid);
-        } catch (SQLException throwables) {
+        } catch (final SQLException throwables) {
             throwables.printStackTrace();
         }
     }

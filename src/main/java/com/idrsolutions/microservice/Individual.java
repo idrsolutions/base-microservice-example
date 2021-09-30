@@ -33,7 +33,7 @@ import java.util.Map;
  * for identification of clients which are requesting file conversions.
  */
 public class Individual {
-    DBHandler database = BaseServlet.database;
+    final DBHandler database = BaseServlet.database;
 
     private final String uuid;
     private boolean isAlive = true;
@@ -124,10 +124,10 @@ public class Individual {
      */
     public String getMassInsertString(String table, Map<String, String> values) {
         if (values.isEmpty()) return null;
-        StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
+        final StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
 
         boolean first = true;
-        for (String key : values.keySet()) {
+        for (final String key : values.keySet()) {
             if (first) {
                 first = false;
             } else {
