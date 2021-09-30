@@ -114,31 +114,6 @@ public class Individual {
         return json.build().toString();
     }
 
-    /**
-     * Gets an SQL string that will insert all the given values into the given table
-     * Returns null if the Values map is empty
-     *
-     * @param table The table for the INSERT operation to operate on
-     * @param values The values to be inserted into the table
-     * @return The complete sql string, or null if the value map is empty
-     */
-    public String getMassInsertString(String table, Map<String, String> values) {
-        if (values.isEmpty()) return null;
-        final StringBuilder sqlString = new StringBuilder("INSERT INTO " + table + " VALUES");
-
-        boolean first = true;
-        for (final String key : values.keySet()) {
-            if (first) {
-                first = false;
-            } else {
-                sqlString.append(",");
-            }
-            sqlString.append(" (\"").append(uuid).append("\", \"").append(key).append("\", \"").append(values.get(key)).append("\")");
-        }
-
-        return sqlString.toString();
-    }
-
     public Map<String, String> getCustomValues() {
         return customValues;
     }

@@ -116,16 +116,16 @@ public class DBHandler {
      * @param individual the individual to insert into the database
      */
     public void putIndividual(Individual individual) {
-        try (final Statement statement = connection.createStatement()) {
-            statement.executeUpdate("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (\"" + individual.getUuid() + "\", \"" + individual.isAlive() + "\", \"" + individual.getTimestamp() + "\", \"" + individual.getState() + "\", \"" + individual.getErrorCode() + "\", \"" + individual.getErrorMessage() + "\")");
-            final String settings = individual.getMassInsertString("settings", individual.getSettings());
-            if (settings != null) {
-                statement.executeUpdate(settings);
-            }
-            String customValues = individual.getMassInsertString("customValues", individual.getCustomValues());
-            if (customValues != null) {
-                statement.executeUpdate(customValues);
-            }
+        try (final PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
+            individualStatement.setString(1, individual.getUuid());
+            individualStatement.setBoolean(2, individual.isAlive());
+            individualStatement.setLong(3, individual.getTimestamp());
+            individualStatement.setString(4, individual.getState());
+            individualStatement.setString(5, individual.getErrorCode());
+            individualStatement.setString(6, individual.getErrorMessage());
+
+            setIndividualSettings(individual.getUuid(), individual.getSettings());
+            setIndividualCustomValues(individual.getUuid(), individual.getCustomValues());
         } catch (final SQLException e) {
             e.printStackTrace();
         }
@@ -136,8 +136,9 @@ public class DBHandler {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     public void cleanOldEntries(long TTL) {
-        try (final Statement statement = connection.createStatement()) {
-            statement.executeUpdate("DELETE FROM conversions WHERE theTime < " + (new Date().getTime() - TTL));
+        try (final PreparedStatement statement = connection.prepareStatement("DELETE FROM conversions WHERE theTime < ?")) {
+            statement.setFloat(1, new Date().getTime() - TTL);
+            statement.executeUpdate();
         } catch (final SQLException e) {
             e.printStackTrace();
         }
@@ -174,7 +175,7 @@ public class DBHandler {
         }
     }
 
-    private void setIndividualMap(String uuid, String table, Map<String, String> map) {
+    public void setIndividualMap(String uuid, String table, Map<String, String> map) {
         try (final PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM ? WHERE uuid = ?");
              PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO ? VALUES (?, ?, ?)")) {
             deleteStatement.setString(1, table);
