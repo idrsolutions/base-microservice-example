@@ -149,7 +149,7 @@ public abstract class BaseServlet extends HttpServlet {
     private static void sendResponse(final HttpServletRequest request, final HttpServletResponse response, final String content) {
         allowCrossOrigin(request, response);
         response.setContentType("application/json");
-        try (final PrintWriter out = response.getWriter()) {
+        try(PrintWriter out = response.getWriter()) {
             out.println(content);
         } catch (final IOException e) {
             LOG.log(Level.SEVERE, "IOException thrown when sending json response", e);
@@ -524,7 +524,7 @@ public abstract class BaseServlet extends HttpServlet {
         final File inputDir = createInputDirectory(individual.getUuid());
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
-        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
+        try(FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
             output.flush();
         }
@@ -613,7 +613,7 @@ public abstract class BaseServlet extends HttpServlet {
             return out;
         }
 
-        try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
+        try(JsonParser jp = Json.createParser(new StringReader(settings))) {
             String currentKey = null;
             byte arrayDepth = 0;
             while (jp.hasNext()) {

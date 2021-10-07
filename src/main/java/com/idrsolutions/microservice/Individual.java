@@ -92,7 +92,7 @@ public class Individual {
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
 
-        DBHandler.INSTANCE.doInvidivualError(uuid, state, errorCode, errorMessage);
+        DBHandler.INSTANCE.doIndividualError(uuid, state, errorCode, errorMessage);
     }
 
     /**
