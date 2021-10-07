@@ -112,7 +112,16 @@ public class DBHandler {
         }
     }
 
-
+    /**
+     * Closes the database connections
+     */
+    public void shutdown() {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Inserts the given individual into the database

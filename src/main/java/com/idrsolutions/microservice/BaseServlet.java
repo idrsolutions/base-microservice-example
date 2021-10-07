@@ -671,4 +671,10 @@ public abstract class BaseServlet extends HttpServlet {
         }
         dirPath.delete();
     }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        DBHandler.INSTANCE.shutdown();
+    }
 }
