@@ -27,6 +27,7 @@ import javax.json.JsonObjectBuilder;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a file conversion request to the server. Allows storage of UUID's
@@ -42,7 +43,7 @@ public class Individual {
     private Object customData;
 
     private Map<String, String> settings;
-    private Map<String, String> customValues = new HashMap<>();
+    private Map<String, String> customValues = new ConcurrentHashMap<>();
 
     /**
      * Create individual with a specific UUID.
@@ -67,7 +68,7 @@ public class Individual {
      * @param settings the conversion settings
      * @param customValues the custom values
      */
-    public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage, HashMap<String, String> settings, HashMap<String, String> customValues) {
+    public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage, HashMap<String, String> settings, Map<String, String> customValues) {
         this.uuid = uuid;
         this.isAlive = isAlive;
         this.timestamp = timestamp;

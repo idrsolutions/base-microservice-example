@@ -7,6 +7,7 @@ import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DBHandler {
     public static final DBHandler INSTANCE = new DBHandler();
@@ -93,7 +94,7 @@ public class DBHandler {
             customValuesStatement.setString(1, id);
 
             final ResultSet customValuesResultSet = customValuesStatement.executeQuery();
-            HashMap<String, String> customValues = new HashMap<>();
+            Map<String, String> customValues = new ConcurrentHashMap<>();
 
             while (customValuesResultSet.next()) {
                 customValues.put(customValuesResultSet.getString("key"), customValuesResultSet.getString("value"));
