@@ -33,8 +33,6 @@ import java.util.Map;
  * for identification of clients which are requesting file conversions.
  */
 public class Individual {
-    final DBHandler database = BaseServlet.database;
-
     private final String uuid;
     private boolean isAlive = true;
     private final long timestamp;
@@ -93,7 +91,7 @@ public class Individual {
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
 
-        database.doInvidivualError(uuid, state, errorCode, errorMessage);
+        DBHandler.INSTANCE.doInvidivualError(uuid, state, errorCode, errorMessage);
     }
 
     /**
@@ -125,7 +123,7 @@ public class Individual {
     public void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
 
-        database.setIndividualCustomValues(uuid, customValues);
+        DBHandler.INSTANCE.setIndividualCustomValues(uuid, customValues);
     }
 
     /**
@@ -138,7 +136,7 @@ public class Individual {
     public void setValue(final String key, final String value) {
         customValues.put(key, value);
 
-        database.setIndividualCustomValue(uuid, key, value);
+        DBHandler.INSTANCE.setIndividualCustomValue(uuid, key, value);
     }
 
     /**
@@ -197,7 +195,7 @@ public class Individual {
     public void setAlive(boolean alive) {
         isAlive = alive;
 
-        database.setIndividualAlive(uuid, alive);
+        DBHandler.INSTANCE.setIndividualAlive(uuid, alive);
     }
 
     /**
@@ -219,7 +217,7 @@ public class Individual {
     public void setState(String state) {
         this.state = state;
 
-        database.setIndividualState(uuid, state);
+        DBHandler.INSTANCE.setIndividualState(uuid, state);
     }
 
     /**
@@ -261,7 +259,7 @@ public class Individual {
     public void setSettings(final Map<String, String> settings) {
         this.settings = settings;
 
-        database.setIndividualSettings(uuid, settings);
+        DBHandler.INSTANCE.setIndividualSettings(uuid, settings);
     }
 
     /**

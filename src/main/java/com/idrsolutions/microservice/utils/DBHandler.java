@@ -9,9 +9,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DBHandler {
+    public static final DBHandler INSTANCE = new DBHandler();
+
     Connection connection;
 
-    public DBHandler() {
+    private DBHandler() {
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:database.db");

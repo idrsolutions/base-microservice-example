@@ -68,8 +68,6 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
-    protected static final DBHandler database = new DBHandler();
-
 
     /**
      * Get the location where input files is stored
@@ -175,7 +173,7 @@ public abstract class BaseServlet extends HttpServlet {
         }
 
         try {
-            final Individual individual = database.getIndividual(uuidStr);
+            final Individual individual = DBHandler.INSTANCE.getIndividual(uuidStr);
 
             if (individual == null) {
                 doError(request, response, "Unknown uuid: " + uuidStr, 404);
@@ -228,7 +226,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-        database.cleanOldEntries(individualTTL);
+        DBHandler.INSTANCE.cleanOldEntries(individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -265,7 +263,7 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
         }
 
-        database.putIndividual(individual);
+        DBHandler.INSTANCE.putIndividual(individual);
 
         sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }
