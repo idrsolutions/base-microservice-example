@@ -20,8 +20,11 @@
  */
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.storage.GCPStorage;
+import com.idrsolutions.microservice.storage.IStorage;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
+import com.idrsolutions.microservice.utils.ZipHelper;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -47,6 +50,8 @@ import javax.naming.SizeLimitExceededException;
  */
 public abstract class BaseServlet extends HttpServlet {
 
+    IStorage storage;
+
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
     protected static final String TEMP_DIR;
@@ -66,6 +71,18 @@ public abstract class BaseServlet extends HttpServlet {
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
     private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        try {
+            storage = new GCPStorage();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create Storage object");
+        }
+
+    }
 
     /**
      * Get the location where input files is stored
@@ -477,6 +494,16 @@ public abstract class BaseServlet extends HttpServlet {
                 individual.setAlive(false);
             }
         });
+    }
+
+    protected void finishConversion(Individual individual, File output, String destName) throws IOException {
+        byte[] zipFile = ZipHelper.zipFolderInMemory(output.getPath(), true);
+
+        String downloadURL = storage.put(zipFile, destName + ".zip", individual.getUuid());
+
+        individual.setValue("downloadUrl", downloadURL);
+
+        individual.setState("processed");
     }
 
     /**

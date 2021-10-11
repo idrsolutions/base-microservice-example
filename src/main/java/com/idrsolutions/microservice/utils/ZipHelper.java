@@ -20,10 +20,7 @@
  */
 package com.idrsolutions.microservice.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -64,6 +61,24 @@ public class ZipHelper {
             addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
             zip.flush();
             fileWriter.flush();
+        }
+    }
+
+    /**
+     * Zip a folder and all its contents to the destination zip in memory.
+     *
+     * @param srcFolder the source folder to zip
+     * @param createParentDirectoryInZip whether to include a parent directory within the zip file with the same name as the source folder
+     * @return A bytearray containing the zipFile
+     * @throws IOException if there is a problem writing or reading the file
+     */
+    public static byte[] zipFolderInMemory(final String srcFolder, final boolean createParentDirectoryInZip) throws IOException {
+        try (
+                final ByteArrayOutputStream zipBAOS = new ByteArrayOutputStream();
+                final ZipOutputStream zip = new ZipOutputStream(zipBAOS)) {
+            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
+            zip.flush();
+            return zipBAOS.toByteArray();
         }
     }
 
