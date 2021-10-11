@@ -194,12 +194,14 @@ public class DBHandler {
             deleteStatement.setString(2, uuid);
             deleteStatement.executeUpdate();
 
-            insertStatement.setString(1, table);
-            insertStatement.setString(2, uuid);
-            for (String key : map.keySet()) {
-                insertStatement.setString(3, key);
-                insertStatement.setString(4, map.get(key));
-                insertStatement.executeUpdate();
+            if (!map.isEmpty()) {
+                insertStatement.setString(1, table);
+                insertStatement.setString(2, uuid);
+                for (String key : map.keySet()) {
+                    insertStatement.setString(3, key);
+                    insertStatement.setString(4, map.get(key));
+                    insertStatement.executeUpdate();
+                }
             }
         } catch (final SQLException err) {
             err.printStackTrace();
