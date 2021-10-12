@@ -188,18 +188,16 @@ public class DBHandler {
     }
 
     public void setIndividualMap(String uuid, String table, Map<String, String> map) {
-        try(PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM ? WHERE uuid = ?");
-             PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO ? VALUES (?, ?, ?)")) {
-            deleteStatement.setString(1, table);
-            deleteStatement.setString(2, uuid);
+        try(PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM " + table + " WHERE uuid = ?");
+            PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?, ?)")) {
+            deleteStatement.setString(1, uuid);
             deleteStatement.executeUpdate();
 
-            if (!map.isEmpty()) {
-                insertStatement.setString(1, table);
-                insertStatement.setString(2, uuid);
+            if (map != null && !map.isEmpty()) {
+                insertStatement.setString(1, uuid);
                 for (String key : map.keySet()) {
-                    insertStatement.setString(3, key);
-                    insertStatement.setString(4, map.get(key));
+                    insertStatement.setString(2, key);
+                    insertStatement.setString(3, map.get(key));
                     insertStatement.executeUpdate();
                 }
             }
