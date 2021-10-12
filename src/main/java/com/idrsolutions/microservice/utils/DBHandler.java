@@ -136,6 +136,8 @@ public class DBHandler {
             individualStatement.setString(5, individual.getErrorCode());
             individualStatement.setString(6, individual.getErrorMessage());
 
+            individualStatement.executeUpdate();
+
             setIndividualSettings(individual.getUuid(), individual.getSettings());
             setIndividualCustomValues(individual.getUuid(), individual.getCustomValues());
         } catch (final SQLException e) {
@@ -220,6 +222,8 @@ public class DBHandler {
             statement.setInt(2, errorCode);
             statement.setString(3, errorMessage);
             statement.setString(4, uuid);
+
+            statement.executeUpdate();
         } catch (final SQLException throwables) {
             throwables.printStackTrace();
         }
