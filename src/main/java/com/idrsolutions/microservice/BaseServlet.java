@@ -241,7 +241,7 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        individual.setCustomDataPreDatabase(request.getAttribute("com.idrsolutions.microservice.customData"));
+        individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
 
         final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
 
@@ -262,8 +262,6 @@ public abstract class BaseServlet extends HttpServlet {
                 doError(request, response, "Unrecognised input type", 400);
                 return;
         }
-
-        DBHandler.INSTANCE.putIndividual(individual);
 
         sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
     }
@@ -379,6 +377,8 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File outputDir = createOutputDirectory(individual.getUuid());
 
+        individual.initDatabase();
+
         addToQueue(individual, params, inputFile, outputDir, getContextURL(request));
 
         return true;
@@ -438,6 +438,8 @@ public abstract class BaseServlet extends HttpServlet {
         final String contextUrl = getContextURL(request);
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
+
+        individual.initDatabase();
 
         downloadQueue.submit(() -> {
             File inputFile = null;

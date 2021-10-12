@@ -45,6 +45,8 @@ public class Individual {
     private Map<String, String> settings;
     private Map<String, String> customValues = new ConcurrentHashMap<>();
 
+    private boolean databaseReady = false;
+
     /**
      * Create individual with a specific UUID.
      *
@@ -54,6 +56,11 @@ public class Individual {
         this.uuid = uuid;
         timestamp = new Date().getTime();
         state = "queued";
+    }
+
+    public void initDatabase() {
+        DBHandler.INSTANCE.putIndividual(this);
+        databaseReady = true;
     }
 
     /**
@@ -124,7 +131,7 @@ public class Individual {
     public void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
 
-        DBHandler.INSTANCE.setIndividualCustomValues(uuid, customValues);
+        if (databaseReady) DBHandler.INSTANCE.setIndividualCustomValues(uuid, customValues);
     }
 
     /**
@@ -260,7 +267,7 @@ public class Individual {
     public void setSettings(final Map<String, String> settings) {
         this.settings = settings;
 
-        DBHandler.INSTANCE.setIndividualSettings(uuid, settings);
+        if (databaseReady) DBHandler.INSTANCE.setIndividualSettings(uuid, settings);
     }
 
     /**
@@ -281,15 +288,6 @@ public class Individual {
         this.customData = customData;
 
         // TODO: Database stuff
-    }
-
-    /**
-     * Store custom data in the Individual without updating the database
-     *
-     * @param customData the custom data to store
-     */
-    public void setCustomDataPreDatabase(Object customData) {
-        this.customData = customData;
     }
 
     /**
