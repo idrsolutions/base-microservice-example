@@ -93,7 +93,7 @@ public class Individual {
      *
      * @return an immutable JsonObject of customValues
      */
-    private JsonObject getCustomValues() {
+    private synchronized JsonObject getCustomValues() {
         final JsonObject jsonObj = customValues.build();
         customValues = Json.createObjectBuilder();
         jsonObj.forEach((s, jsonValue) -> customValues.add(s, jsonValue));
@@ -108,7 +108,7 @@ public class Individual {
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
-    public void setValue(final String key, final String value) {
+    public synchronized void setValue(final String key, final String value) {
         customValues.add(key, value);
     }
 
@@ -119,7 +119,7 @@ public class Individual {
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
-    public void setValue(final String key, final boolean value) {
+    public synchronized void setValue(final String key, final boolean value) {
         customValues.add(key, value);
     }
 
@@ -130,7 +130,7 @@ public class Individual {
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
-    public void setValue(final String key, final int value) {
+    public synchronized void setValue(final String key, final int value) {
         customValues.add(key, value);
     }
 
