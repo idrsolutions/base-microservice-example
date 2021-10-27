@@ -31,7 +31,7 @@ public class LibreOfficeHelper {
      */
     public static boolean convertToPDF(final File file, final Individual individual) {
         final String uuid = individual.getUuid();
-        final String uniqueLOProfile = TEMP_DIR + "LO-" + uuid;
+        final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final ProcessBuilder pb = new ProcessBuilder("soffice",
                 "-env:UserInstallation=file://" + uniqueLOProfile,
