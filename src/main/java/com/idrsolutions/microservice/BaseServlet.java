@@ -53,8 +53,19 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
-    private static String INPUTPATH = "../docroot/input/";
-    private static String OUTPUTPATH = "../docroot/output/";
+    protected static final String USER_HOME;
+
+    static {
+        String userDir = System.getProperty("user.home");
+        if (!userDir.endsWith("/") && !userDir.endsWith("\\")) {
+            userDir += System.getProperty("file.separator");
+        }
+        USER_HOME = userDir;
+    }
+
+    private static String INPUTPATH = USER_HOME + ".idr/input/";
+    private static String OUTPUTPATH = USER_HOME + ".idr/output/";
+
     private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
