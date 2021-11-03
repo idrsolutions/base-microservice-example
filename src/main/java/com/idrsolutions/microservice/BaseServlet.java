@@ -21,13 +21,18 @@
 package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.utils.DownloadHelper;
+import com.idrsolutions.microservice.utils.FileHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
 import javax.json.stream.JsonParsingException;
+import javax.naming.SizeLimitExceededException;
 import javax.servlet.ServletException;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 import java.io.*;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,7 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.naming.SizeLimitExceededException;
 
 /**
  * An extendable base for conversion microservices. Provides general
@@ -49,18 +53,19 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
-    protected static final String TEMP_DIR;
+    protected static final String USER_HOME;
 
     static {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        if (!tempDir.endsWith("/") && !tempDir.endsWith("\\")) {
-            tempDir += System.getProperty("file.separator");
+        String userDir = System.getProperty("user.home");
+        if (!userDir.endsWith("/") && !userDir.endsWith("\\")) {
+            userDir += System.getProperty("file.separator");
         }
-        TEMP_DIR = tempDir;
+        USER_HOME = userDir;
     }
 
-    private static String INPUTPATH = "../docroot/input/";
-    private static String OUTPUTPATH = "../docroot/output/";
+    private static String INPUTPATH = USER_HOME + ".idr/input/";
+    private static String OUTPUTPATH = USER_HOME + ".idr/output/";
+
     private static long individualTTL = 86400000L; // 24 hours
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
@@ -302,7 +307,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String userOutputDirPath = OUTPUTPATH + uuid;
         final File outputDir = new File(userOutputDirPath);
         if (outputDir.exists()) {
-            deleteFolder(outputDir);
+            FileHelper.deleteFolder(outputDir);
         }
         outputDir.mkdirs();
         return outputDir;
@@ -650,23 +655,5 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return out;
-    }
-
-    /**
-     * Delete a folder and all of its contents.
-     *
-     * @param dirPath the path to the folder to delete
-     */
-    protected static void deleteFolder(final File dirPath) {
-        final File[] files = dirPath.listFiles();
-        if (files != null) {
-            for (final File file : files) {
-                if (file.isDirectory()) {
-                    deleteFolder(file);
-                }
-                file.delete();
-            }
-        }
-        dirPath.delete();
     }
 }
