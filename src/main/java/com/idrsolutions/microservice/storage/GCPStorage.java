@@ -1,11 +1,11 @@
 package com.idrsolutions.microservice.storage;
 
-import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.cloud.WriteChannel;
-import com.google.cloud.storage.*;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class GCPStorage extends BaseStorage {
