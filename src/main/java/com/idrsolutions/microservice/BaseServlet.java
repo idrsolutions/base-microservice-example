@@ -555,30 +555,30 @@ public abstract class BaseServlet extends HttpServlet {
         // filename of %22" appears as filename="%22%22".
         // See https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
         //
-        // Note also, that the rules for the encoding of HTTP headers is not the same as the rules for the encoding of
-        // the content-disposition header's filename value. Most sources will tell you that header values may only
-        // contain ISO-8859-1, however is it unarguable that user-agents actually pass the filename in UTF-8.
+        // The rules for the encoding of HTTP headers is not the same as the rules for the encoding of the
+        // content-disposition header's filename value in multipart/form-data requests. Most sources say that header
+        // values may only contain ISO-8859-1, but this does not apply to the filename value in this case.
         //
+        // The following wording from RFC 2183 is obsolete and should be ignored:
         // "Current [RFC 2045] grammar restricts parameter values (and hence Content-Disposition filenames) to
         // US-ASCII." - https://datatracker.ietf.org/doc/html/rfc2183#section-2.3
         //
-        // Note also, that the charset of the body of the request does not necessarily apply to the headers, so the
-        // methods of passing the encoding are irrelevant.
+        // multipart/form-data requests send their payload (which includes the content-disposition header) in the body
+        // of the POST request. It is not a typical HTTP header.
         //
-        // Note that RFC 5987 https://datatracker.ietf.org/doc/html/rfc5987 provides a method to specify the charset of
-        // header values (using filename*="value"), however this is explicitly disallowed by RFC 7578.
+        // RFC 5987 and RFC 6266 provides a method to specify the charset of header values (using filename*="value"),
+        // however this is explicitly disallowed by RFC 7578.
         // "NOTE: The encoding method described in [RFC5987], which would add a "filename*" parameter to the
         // Content-Disposition header field, MUST NOT be used." - https://datatracker.ietf.org/doc/html/rfc7578#section-4.2
         //
-        // Note also that RFC 6266 applies to response headers only - not request headers.
+        // Note also that RFC 6266 applies to response headers only - not multipart/form-data headers in POST requests.
         //
         // "Some commonly deployed systems use multipart/form-data with file names directly encoded including octets
         // outside the US-ASCII range. The encoding used for the file names is typically UTF-8, although HTML forms will
         // use the charset associated with the form." - https://datatracker.ietf.org/doc/html/rfc7578#section-4.2
         //
-        // Thus to conclude, we should treat the value of the filename as UTF-8. Whilst researching, I observed that
-        // it is typical to pass the filename separatly to the content-disposition header (e.g. as JSON) in order to
-        // store the value correctly.
+        // Thus we should treat the value of the filename as UTF-8. Whilst researching, I observed that it is typical to
+        // pass the filename separately to the content-disposition header (e.g. as JSON) in order to store the value correctly.
 
         final String contentDisposition = part.getHeader("content-disposition");
         if (contentDisposition.isEmpty()) {
