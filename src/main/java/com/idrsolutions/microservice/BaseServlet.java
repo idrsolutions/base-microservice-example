@@ -551,7 +551,7 @@ public abstract class BaseServlet extends HttpServlet {
         // spec do not match those in RFCs, so browsers may do something different to other HTTP clients.
         //
         // Certain characters may be percent-encoded 0x0A (LF), 0x0D (CR), 0x22 ("). However it is not possible to
-        // differentiate them from occurances of %0A, %0D & %22 because % itself does not get percent-encoded, so a
+        // differentiate them from occurrences of %0A, %0D & %22 because % itself does not get percent-encoded, so a
         // filename of %22" appears as filename="%22%22".
         // See https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
         //
