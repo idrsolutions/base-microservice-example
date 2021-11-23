@@ -128,7 +128,7 @@ public class Individual {
      * Store a HashMap containing custom values
      * @param customValues The custom values
      */
-    public void setCustomValues(Map<String, String> customValues) {
+    public synchronized void setCustomValues(Map<String, String> customValues) {
         this.customValues = customValues;
 
         if (databaseReady) DBHandler.INSTANCE.setIndividualCustomValues(uuid, customValues);
@@ -141,7 +141,7 @@ public class Individual {
      * @param key the key to be passed to the client
      * @param value the value mapped to the key
      */
-    public void setValue(final String key, final String value) {
+    public synchronized void setValue(final String key, final String value) {
         customValues.put(key, value);
 
         DBHandler.INSTANCE.setIndividualCustomValue(uuid, key, value);
@@ -157,7 +157,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     @Deprecated
-    public void setValue(final String key, final boolean value) {
+    public synchronized void setValue(final String key, final boolean value) {
         setValue(key, String.valueOf(value));
     }
 
@@ -171,7 +171,7 @@ public class Individual {
      * @param value the value mapped to the key
      */
     @Deprecated
-    public void setValue(final String key, final int value) {
+    public synchronized void setValue(final String key, final int value) {
         setValue(key, String.valueOf(value));
     }
 
