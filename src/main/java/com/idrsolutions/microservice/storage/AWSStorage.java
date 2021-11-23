@@ -18,8 +18,8 @@ public class AWSStorage extends BaseStorage {
     String basePath = "";
 
     /**
-     * Uses Environment variables-AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-     * @param region
+     * Uses Environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+     * @param region The AWS Region
      */
     public AWSStorage(Regions region) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build();

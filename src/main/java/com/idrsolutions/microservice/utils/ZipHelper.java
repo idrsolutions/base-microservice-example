@@ -73,11 +73,12 @@ public class ZipHelper {
      * @throws IOException if there is a problem writing or reading the file
      */
     public static byte[] zipFolderInMemory(final String srcFolder, final boolean createParentDirectoryInZip) throws IOException {
-        try (
-                final ByteArrayOutputStream zipBAOS = new ByteArrayOutputStream();
-                final ZipOutputStream zip = new ZipOutputStream(zipBAOS)) {
-            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
-            zip.flush();
+        try (final ByteArrayOutputStream zipBAOS = new ByteArrayOutputStream()) {
+            try (final ZipOutputStream zip = new ZipOutputStream(zipBAOS)) {
+                addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
+                zip.flush();
+            }
+
             return zipBAOS.toByteArray();
         }
     }
