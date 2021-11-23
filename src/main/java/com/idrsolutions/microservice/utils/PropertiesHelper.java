@@ -5,11 +5,12 @@ import com.idrsolutions.microservice.BaseServlet;
 import javax.servlet.ServletContext;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class PropertiesHelper {
 
-    public static void loadProperties(final ServletContext servletContext, final String propertiesFile) {
+    public static void loadProperties(final ServletContext servletContext, final InputStream propertiesFile) {
 
         final Properties properties = readPropertiesFile(propertiesFile);
 
@@ -24,10 +25,10 @@ public class PropertiesHelper {
 
     }
 
-    private static Properties readPropertiesFile(final String propertiesFile) {
+    private static Properties readPropertiesFile(final InputStream propertiesInput) {
         final Properties properties = new Properties();
 
-        try (FileInputStream propertiesInput = new FileInputStream(propertiesFile)){
+        try {
             properties.load(propertiesInput);
         } catch (IOException e) {
             e.printStackTrace();

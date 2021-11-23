@@ -5,13 +5,14 @@ import com.idrsolutions.microservice.utils.PropertiesHelper;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class BaseServletContextListener implements ServletContextListener {
 
-    String propertiesFile;
+    InputStream propertiesFile;
 
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
