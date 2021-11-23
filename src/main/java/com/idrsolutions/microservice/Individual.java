@@ -40,10 +40,10 @@ public class Individual {
     private String state;
     private String errorCode;
     private String errorMessage;
-    private Object customData;
 
     private Map<String, String> settings;
     private Map<String, String> customValues = new ConcurrentHashMap<>();
+    private Map<String, String> customData;
 
     private boolean databaseReady = false;
 
@@ -275,7 +275,7 @@ public class Individual {
      *
      * @return the custom data
      */
-    public Object getCustomData() {
+    public Map<String, String> getCustomData() {
         return customData;
     }
 
@@ -284,10 +284,11 @@ public class Individual {
      *
      * @param customData the custom data to store
      */
-    public void setCustomData(Object customData) {
+    public void setCustomData(Map<String, String> customData) {
         this.customData = customData;
 
         // TODO: Database stuff
+        if (databaseReady) DBHandler.INSTANCE.setIndividualCustomData(uuid, customData);
     }
 
     /**

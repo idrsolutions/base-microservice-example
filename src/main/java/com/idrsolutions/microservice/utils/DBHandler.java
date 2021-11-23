@@ -33,6 +33,7 @@ public class DBHandler {
             // Clear Tables
             statement.executeUpdate("DROP TABLE IF EXISTS settings");
             statement.executeUpdate("DROP TABLE IF EXISTS customValues");
+            statement.executeUpdate("DROP TABLE IF EXISTS customData");
             statement.executeUpdate("DROP TABLE IF EXISTS conversions");
 
             // Create Tables
@@ -54,6 +55,13 @@ public class DBHandler {
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
                     ")");
             statement.executeUpdate("CREATE TABLE customValues (" +
+                    "uuid VARCHAR(36), " +
+                    "key VARCHAR(70), " +
+                    "value TEXT, " +
+                    "PRIMARY KEY (uuid, key), " +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    ")");
+            statement.executeUpdate("CREATE TABLE customData (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
                     "value TEXT, " +
@@ -159,7 +167,7 @@ public class DBHandler {
     }
 
     public void setIndividualCustomValue(String uuid, String key, String value) {
-        try(PreparedStatement statement = connection.prepareStatement("INSERT INTO customValues VALUES (?, ?, ?)")) {
+        try(PreparedStatement statement = connection.prepareStatement("REPLACE INTO customValues VALUES (?, ?, ?) ")) {
             statement.setString(1, uuid);
             statement.setString(2, key);
             statement.setString(3, value);
@@ -214,6 +222,10 @@ public class DBHandler {
 
     public void setIndividualCustomValues(String uuid, Map<String, String> customValues) {
         setIndividualMap(uuid, "customValues", customValues);
+    }
+
+    public void setIndividualCustomData(String uuid, Map<String, String> customData) {
+        setIndividualMap(uuid, "customData", customData);
     }
 
     public void doIndividualError(String uuid, String state, int errorCode, String errorMessage) {
