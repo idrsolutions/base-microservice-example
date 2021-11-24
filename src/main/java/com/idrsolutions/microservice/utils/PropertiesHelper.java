@@ -18,10 +18,8 @@ public class PropertiesHelper {
         loadConcurrentConversions(servletContext, properties);
 
 
-        //service.inputLocation
-        loadInputLocation(servletContext, properties);
-
-        //service.outputLocation
+        //service.libreOfficePath
+        loadLibreOfficePath(servletContext, properties);
 
     }
 
@@ -40,7 +38,7 @@ public class PropertiesHelper {
     private static void loadConcurrentConversions(final ServletContext servletContext, final Properties properties) {
         String concurrentConversions = properties.getProperty("service.concurrentConversion");
         final int concurrentConversionCount;
-        if (concurrentConversions != null && !concurrentConversions.isEmpty() && concurrentConversions.matches("\\d+")) {
+        if (concurrentConversions != null && !concurrentConversions.isEmpty() && concurrentConversions.matches("\\d+") && Integer.parseInt(concurrentConversions) > 0) {
             concurrentConversionCount = Integer.parseInt(concurrentConversions);
         } else {
             concurrentConversionCount = Runtime.getRuntime().availableProcessors();
@@ -49,23 +47,18 @@ public class PropertiesHelper {
         servletContext.setAttribute("service.concurrentConversion", concurrentConversionCount);
     }
 
-    private static void loadInputLocation(final ServletContext servletContext, final Properties properties) {
+    private static void loadLibreOfficePath(final ServletContext servletContext, final Properties properties) {
 
 
-        String propertiesInputLocation = properties.getProperty("service.inputLocation");
+        String propertiesInputLocation = properties.getProperty("service.libreOfficePath");
         final String inputLocation;
         if (propertiesInputLocation != null && !propertiesInputLocation.isEmpty()) {
             inputLocation = propertiesInputLocation;
         } else {
-            String userDir = System.getProperty("user.home");
-            if (!userDir.endsWith("/") && !userDir.endsWith("\\")) {
-                userDir += System.getProperty("file.separator");
-            }
-
-            inputLocation = userDir + "/.idr/buildvu-microservice/input/";
+            inputLocation ="soffice";
         }
 
-        servletContext.setAttribute("service.inputLocation", inputLocation);
+        servletContext.setAttribute("service.libreOfficePath", inputLocation);
     }
 
 }
