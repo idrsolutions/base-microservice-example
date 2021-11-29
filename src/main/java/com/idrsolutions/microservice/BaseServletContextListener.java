@@ -43,9 +43,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
             LOG.log(Level.SEVERE, "IOException thrown when reading properties file", e);
         }
 
-
-        BaseServlet.setInputPath((String) servletContext.getAttribute("service.inputLocation"));
-
         final ExecutorService convertQueue = Executors.newFixedThreadPool((Integer) servletContext.getAttribute("service.concurrentConversion"));
         final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
         final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
