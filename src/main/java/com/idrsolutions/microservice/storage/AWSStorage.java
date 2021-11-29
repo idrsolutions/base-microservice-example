@@ -1,6 +1,7 @@
 package com.idrsolutions.microservice.storage;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -16,6 +17,10 @@ public class AWSStorage extends BaseStorage {
 
     String bucketName = "idr-pdf-dest";
     String basePath = "";
+
+    protected AWSStorage() {
+
+    }
 
     /**
      * Uses Environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
