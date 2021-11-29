@@ -5,21 +5,44 @@ import com.idrsolutions.microservice.utils.PropertiesHelper;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class BaseServletContextListener implements ServletContextListener {
+public abstract class BaseServletContextListener implements ServletContextListener {
 
-    InputStream propertiesFile;
+    private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
+
+    public abstract String getConfigPath();
+
+    public abstract String getConfigName();
 
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
 
         final ServletContext servletContext = servletContextEvent.getServletContext();
+        final File externalFile = new File(getConfigPath() + getConfigName());
+        try {
+            final InputStream propertiesFile;
+            if (externalFile.exists()) {
+                propertiesFile = new FileInputStream(externalFile.getAbsolutePath());
+            } else {
+                propertiesFile = servletContextEvent.getServletContext().getResourceAsStream("buildvu-microservice.properties");
+            }
 
-        PropertiesHelper.loadProperties(servletContext, propertiesFile);
+            PropertiesHelper.loadProperties(servletContext, propertiesFile);
+            propertiesFile.close();
+
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "IOException thrown when reading properties file", e);
+        }
+
 
         BaseServlet.setInputPath((String) servletContext.getAttribute("service.inputLocation"));
 
