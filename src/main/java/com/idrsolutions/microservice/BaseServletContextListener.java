@@ -22,6 +22,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     public abstract String getConfigName();
 
+    public abstract void validateConfigFileValues(final Properties propertiesFile);
+
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
 
@@ -43,19 +45,11 @@ public abstract class BaseServletContextListener implements ServletContextListen
             }
         }
 
+        validateConfigFileValues(propertiesFile);
+
         servletContext.setAttribute("properties", propertiesFile);
 
-        final String concurrentConversions = propertiesFile.getProperty("service.concurrentConversion");
-        final int concurrentConversionCount;
-        if (concurrentConversions != null && !concurrentConversions.isEmpty() && concurrentConversions.matches("\\d+") && Integer.parseInt(concurrentConversions) > 0) {
-            concurrentConversionCount = Integer.parseInt(concurrentConversions);
-        } else {
-            concurrentConversionCount = Runtime.getRuntime().availableProcessors();
-            final String logDefaultUse = "Properties value for \"service.concurrentConversion\" incorrect, should be a positive integer. Using a value of " + concurrentConversionCount + " based on available processors";
-            LOG.log(Level.SEVERE, logDefaultUse);
-        }
-
-        final ExecutorService convertQueue = Executors.newFixedThreadPool(concurrentConversionCount);
+        final ExecutorService convertQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty("service.concurrentConversion")));
         final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
         final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
 
