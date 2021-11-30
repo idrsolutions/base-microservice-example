@@ -31,14 +31,14 @@ public abstract class BaseServletContextListener implements ServletContextListen
         final ServletContext servletContext = servletContextEvent.getServletContext();
         final File externalFile = new File(getConfigPath() + getConfigName());
 
-        try(final InputStream intPropertiesFile = servletContext.getResourceAsStream(getConfigName())) {
+        try(InputStream intPropertiesFile = servletContext.getResourceAsStream(getConfigName())) {
             propertiesFile.load(intPropertiesFile);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "IOException thrown when reading default properties file", e);
         }
 
         if (externalFile.exists()) {
-            try (final InputStream extPropertiesFile = new FileInputStream(externalFile.getAbsolutePath())) {
+            try (InputStream extPropertiesFile = new FileInputStream(externalFile.getAbsolutePath())) {
                 propertiesFile.load(extPropertiesFile);
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, "IOException thrown when reading external properties file", e);
