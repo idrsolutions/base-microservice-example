@@ -20,11 +20,15 @@
  */
 package com.idrsolutions.microservice;
 
-import com.idrsolutions.microservice.storage.GCPStorage;
-import com.idrsolutions.microservice.storage.IStorage;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.azure.storage.common.StorageSharedKeyCredential;
+import com.idrsolutions.microservice.storage.*;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 import com.idrsolutions.microservice.utils.ZipHelper;
+import com.oracle.bmc.Region;
+import com.oracle.bmc.auth.BasicAuthenticationDetailsProvider;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -49,7 +53,6 @@ import javax.naming.SizeLimitExceededException;
  * and UUID's.
  */
 public abstract class BaseServlet extends HttpServlet {
-
     IStorage storage;
 
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
@@ -75,13 +78,7 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        try {
-            storage = new GCPStorage();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to create Storage object");
-        }
-
+        storage = new FileStorage();
     }
 
     /**

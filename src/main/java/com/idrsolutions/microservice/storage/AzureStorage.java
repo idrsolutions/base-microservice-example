@@ -1,6 +1,7 @@
 package com.idrsolutions.microservice.storage;
 
 import com.azure.core.credential.AzureSasCredential;
+import com.azure.core.credential.TokenCredential;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -19,21 +20,43 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.OffsetDateTime;
 
+/**
+ * An implementation of {@link IStorage} that uses Azure Blob Storage to store files
+ */
 public class AzureStorage extends BaseStorage {
-    final String containerName = "";
-
     final BlobServiceClient client;
 
-    String accountName = "";
+    final String containerName = "";
+    final String accountName = "";
 
+    /**
+     * Authenticates using Shared Key
+     * @param auth The authentication for Azure
+     */
     public AzureStorage(StorageSharedKeyCredential auth) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
     }
 
+    /**
+     * Authenticates using SAS
+     * @param auth The authentication for Azure
+     */
     public AzureStorage(AzureSasCredential auth) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
     }
 
+    /**
+     * Authenticates using a Token
+     * @param auth The authentication for Azure
+     */
+    public AzureStorage(TokenCredential auth) {
+        this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
+    }
+
+    /**
+     *
+     * @inheritDoc
+     */
     @Override
     public String put(byte[] fileToUpload, String fileName, String uuid) {
         BlobContainerClient containerClient;
@@ -55,8 +78,10 @@ public class AzureStorage extends BaseStorage {
             blobClient.upload(fileStream, fileToUpload.length);
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
 
+        // Set the filename using the content disposition HTTP Header to avoid the downloaded file also containing the UUID
         blobClient.setHttpHeaders(new BlobHttpHeaders().setContentDisposition("attachment; filename=" + fileName));
 
         BlobServiceSasSignatureValues sas = new BlobServiceSasSignatureValues(OffsetDateTime.now().plusMinutes(30), new BlobSasPermission().setReadPermission(true));
