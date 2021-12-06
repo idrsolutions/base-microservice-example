@@ -22,8 +22,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     public abstract String getConfigName();
 
-    public abstract void validateConfigFileValues(final Properties propertiesFile);
-
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
 
@@ -31,7 +29,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         final ServletContext servletContext = servletContextEvent.getServletContext();
         final File externalFile = new File(getConfigPath() + getConfigName());
 
-        try(InputStream intPropertiesFile = servletContext.getResourceAsStream(getConfigName())) {
+        try(InputStream intPropertiesFile = BaseServletContextListener.class.getResourceAsStream("/" + getConfigName())) {
             propertiesFile.load(intPropertiesFile);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "IOException thrown when reading default properties file", e);
@@ -66,4 +64,27 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
     }
+
+
+    protected void validateConfigFileValues(final Properties propertiesFile) {
+        //service.concurrentConversion
+        validateConcurrentConversions(propertiesFile);
+    }
+
+    private static void validateConcurrentConversions(final Properties properties) {
+        final String concurrentConversions = properties.getProperty("service.concurrentConversion");
+        if (concurrentConversions == null || concurrentConversions.isEmpty()) {
+            final int availableProcessors = Runtime.getRuntime().availableProcessors();
+            properties.setProperty("service.concurrentConversion", "" + availableProcessors);
+            LOG.log(Level.INFO, "Properties value for \"service.concurrentConversion\" has not been set. Using a value of " + Runtime.getRuntime().availableProcessors() + " based on available processors.");
+        } else {
+            if (!concurrentConversions.matches("-?\\d+") || Integer.parseInt(concurrentConversions) <= 0) {
+                final int availableProcessors = Runtime.getRuntime().availableProcessors();
+                properties.setProperty("service.concurrentConversion", "" + availableProcessors);
+                LOG.log(Level.WARNING, "Properties value for \"service.concurrentConversion\" was set to \"" + concurrentConversions + "\" but should be a positive integer. Using a value of " + Runtime.getRuntime().availableProcessors() + " based on available processors.");
+            }
+        }
+    }
+
+
 }
