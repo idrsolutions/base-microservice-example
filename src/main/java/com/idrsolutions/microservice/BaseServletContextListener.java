@@ -57,7 +57,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         BaseServlet.setInputPath(propertiesFile.getProperty("inputPath"));
         BaseServlet.setOutputPath(propertiesFile.getProperty("outputPath"));
-        OutputFileServlet.setBasePath(propertiesFile.getProperty("outputPath"));
     }
 
     @Override
