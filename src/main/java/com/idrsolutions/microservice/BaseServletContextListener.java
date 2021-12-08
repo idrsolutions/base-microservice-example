@@ -54,6 +54,10 @@ public abstract class BaseServletContextListener implements ServletContextListen
         servletContext.setAttribute("convertQueue", convertQueue);
         servletContext.setAttribute("downloadQueue", downloadQueue);
         servletContext.setAttribute("callbackQueue", callbackQueue);
+
+        BaseServlet.setInputPath(propertiesFile.getProperty("inputPath"));
+        BaseServlet.setOutputPath(propertiesFile.getProperty("outputPath"));
+        OutputFileServlet.setBasePath(propertiesFile.getProperty("outputPath"));
     }
 
     @Override
@@ -67,20 +71,69 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
 
     protected void validateConfigFileValues(final Properties propertiesFile) {
-        //service.concurrentConversion
-        validateConcurrentConversions(propertiesFile);
+        validateConversionThreadCount(propertiesFile);
+        validateDownloadThreadCount(propertiesFile);
+        validateCallbackThreadCount(propertiesFile);
+        validateInputPath(propertiesFile);
+        validateOutputPath(propertiesFile);
     }
 
-    private static void validateConcurrentConversions(final Properties properties) {
-        final String concurrentConversions = properties.getProperty("conversionThreadCount");
-        if (concurrentConversions == null || concurrentConversions.isEmpty()) {
+    private static void validateConversionThreadCount(final Properties properties) {
+        final String conversonThreads = properties.getProperty("conversionThreadCount");
+        if (conversonThreads == null || conversonThreads.isEmpty()) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
             properties.setProperty("conversionThreadCount", "" + availableProcessors);
             LOG.log(Level.INFO, "Properties value for \"conversionThreadCount\" has not been set. Using a value of " + Runtime.getRuntime().availableProcessors() + " based on available processors.");
-        } else if (!concurrentConversions.matches("\\d+") || Integer.parseInt(concurrentConversions) == 0) {
+        } else if (!conversonThreads.matches("\\d+") || Integer.parseInt(conversonThreads) == 0) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
             properties.setProperty("conversionThreadCount", "" + availableProcessors);
-            LOG.log(Level.WARNING, "Properties value for \"conversionThreadCount\" was set to \"" + concurrentConversions + "\" but should be a positive integer. Using a value of " + availableProcessors + " based on available processors.");
+            LOG.log(Level.WARNING, "Properties value for \"conversionThreadCount\" was set to \"" + conversonThreads + "\" but should be a positive integer. Using a value of " + availableProcessors + " based on available processors.");
+        }
+    }
+
+    private static void validateDownloadThreadCount(final Properties properties) {
+        final String downloadThreads = properties.getProperty("downloadThreadCount");
+        if (downloadThreads == null || downloadThreads.isEmpty() || !downloadThreads.matches("\\d+") || Integer.parseInt(downloadThreads) == 0) {
+            properties.setProperty("downloadThreadCount", "" + downloadThreads);
+            LOG.log(Level.WARNING, "Properties value for \"downloadThreadCount\" was set to \"" + downloadThreads + "\" but should be a positive integer. Using a value of 5.");
+        }
+    }
+
+    private static void validateCallbackThreadCount(final Properties properties) {
+        final String callbackThreads = properties.getProperty("callbackThreadCount");
+        if (callbackThreads == null || callbackThreads.isEmpty() || !callbackThreads.matches("\\d+") || Integer.parseInt(callbackThreads) == 0) {
+            properties.setProperty("callbackThreadCount", "5");
+            LOG.log(Level.WARNING, "Properties value for \"callbackThreadCount\" was set to \"" + callbackThreads + "\" but should be a positive integer. Using a value of 5.");
+        }
+    }
+
+    private static void validateInputPath(final Properties properties) {
+        final String inputPath = properties.getProperty("inputPath");
+        if (inputPath == null || inputPath.isEmpty()) {
+            String inputDir = System.getProperty("user.home");
+            if (!inputDir.endsWith("/") && !inputDir.endsWith("\\")) {
+                inputDir += System.getProperty("file.separator");
+            }
+            inputDir += "/.idr/buildvu-microservice/input/";
+            properties.setProperty("inputPath", inputDir);
+            LOG.log(Level.WARNING, "Properties value for \"inputPath\" was not set. Using a value of \"" + inputDir + "\"");
+        } else if (inputPath.startsWith("~")) {
+            properties.setProperty("inputPath", System.getProperty("user.home") + inputPath.substring(1));
+        }
+    }
+
+    private static void validateOutputPath(final Properties properties) {
+        final String outputPath = properties.getProperty("outputPath");
+        if (outputPath == null || outputPath.isEmpty()) {
+            String outputDir = System.getProperty("user.home");
+            if (!outputDir.endsWith("/") && !outputDir.endsWith("\\")) {
+                outputDir += System.getProperty("file.separator");
+            }
+            outputDir += "/.idr/buildvu-microservice/input/";
+            properties.setProperty("outputPath", outputDir);
+            LOG.log(Level.WARNING, "Properties value for \"outputPath\" was not set. Using a value of \"" + outputDir + "\"");
+        } else if (outputPath.startsWith("~")) {
+            properties.setProperty("outputPath", System.getProperty("user.home") + outputPath.substring(1));
         }
     }
 
