@@ -77,12 +77,10 @@ public abstract class BaseServletContextListener implements ServletContextListen
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
             properties.setProperty("conversionThreadCount", "" + availableProcessors);
             LOG.log(Level.INFO, "Properties value for \"conversionThreadCount\" has not been set. Using a value of " + Runtime.getRuntime().availableProcessors() + " based on available processors.");
-        } else {
-            if (!concurrentConversions.matches("\\d+") || Integer.parseInt(concurrentConversions) == 0) {
-                final int availableProcessors = Runtime.getRuntime().availableProcessors();
-                properties.setProperty("conversionThreadCount", "" + availableProcessors);
-                LOG.log(Level.WARNING, "Properties value for \"conversionThreadCount\" was set to \"" + concurrentConversions + "\" but should be a positive integer. Using a value of " + availableProcessors + " based on available processors.");
-            }
+        } else if (!concurrentConversions.matches("\\d+") || Integer.parseInt(concurrentConversions) == 0) {
+            final int availableProcessors = Runtime.getRuntime().availableProcessors();
+            properties.setProperty("conversionThreadCount", "" + availableProcessors);
+            LOG.log(Level.WARNING, "Properties value for \"conversionThreadCount\" was set to \"" + concurrentConversions + "\" but should be a positive integer. Using a value of " + availableProcessors + " based on available processors.");
         }
     }
 
