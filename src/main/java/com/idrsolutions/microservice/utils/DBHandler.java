@@ -30,14 +30,14 @@ public class DBHandler {
      */
     private void setupDatabase() throws SQLException {
         try(Statement statement = connection.createStatement()) {
-            // Clear Tables
-            statement.executeUpdate("DROP TABLE IF EXISTS settings");
-            statement.executeUpdate("DROP TABLE IF EXISTS customValues");
-            statement.executeUpdate("DROP TABLE IF EXISTS customData");
-            statement.executeUpdate("DROP TABLE IF EXISTS conversions");
+//            // Clear Tables
+//            statement.executeUpdate("DROP TABLE IF EXISTS settings");
+//            statement.executeUpdate("DROP TABLE IF EXISTS customValues");
+//            statement.executeUpdate("DROP TABLE IF EXISTS customData");
+//            statement.executeUpdate("DROP TABLE IF EXISTS conversions");
 
             // Create Tables
-            statement.executeUpdate("CREATE TABLE conversions (" +
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS conversions (" +
                     "uuid VARCHAR(36), " +
                     "isAlive BOOLEAN, " +
                     "theTime UNSIGNED BIGINT(255), " +
@@ -46,22 +46,22 @@ public class DBHandler {
                     "errorMessage VARCHAR(255), " +
                     "PRIMARY KEY (uuid)" +
                     ")");
-            // Setup many-to-one relation with Cascade Delete to clear them out when the reference is deleted
-            statement.executeUpdate("CREATE TABLE settings (" +
+            // Setup many-to-one relations with Cascade Delete to clear them out when the reference is deleted
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS settings (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
                     "value VARCHAR(255), " +
                     "PRIMARY KEY (uuid, key), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
                     ")");
-            statement.executeUpdate("CREATE TABLE customValues (" +
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS customValues (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
                     "value TEXT, " +
                     "PRIMARY KEY (uuid, key), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
                     ")");
-            statement.executeUpdate("CREATE TABLE customData (" +
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS customData (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
                     "value TEXT, " +
