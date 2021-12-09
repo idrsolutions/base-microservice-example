@@ -5,12 +5,16 @@ import com.idrsolutions.microservice.Individual;
 
 import java.sql.*;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DBHandler {
     public static final DBHandler INSTANCE = new DBHandler();
+    private static final Logger LOG = Logger.getLogger(DBHandler.class.getName());
 
     Connection connection;
 
@@ -127,7 +131,7 @@ public class DBHandler {
         try {
             connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error closing database connection", e);
         }
     }
 
@@ -149,7 +153,7 @@ public class DBHandler {
             setIndividualSettings(individual.getUuid(), individual.getSettings());
             setIndividualCustomValues(individual.getUuid(), individual.getCustomValues());
         } catch (final SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error Inserting individual into the database", e);
         }
     }
 
@@ -162,7 +166,7 @@ public class DBHandler {
             statement.setFloat(1, new Date().getTime() - TTL);
             statement.executeUpdate();
         } catch (final SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error Cleaning old entries in the database", e);
         }
     }
 
@@ -172,8 +176,8 @@ public class DBHandler {
             statement.setString(2, key);
             statement.setString(3, value);
             statement.executeUpdate();
-        } catch (final SQLException err) {
-            err.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Error Inserting individual's custom value into the database", e);
         }
     }
 
@@ -182,8 +186,8 @@ public class DBHandler {
             statement.setBoolean(1, alive);
             statement.setString(2, uuid);
             statement.executeUpdate();
-        } catch (final SQLException err) {
-            err.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Error setting individual alive", e);
         }
     }
 
@@ -192,8 +196,8 @@ public class DBHandler {
             statement.setString(1, state);
             statement.setString(2, uuid);
             statement.executeUpdate();
-        } catch (final SQLException err) {
-            err.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Error setting individual state", e);
         }
     }
 
@@ -211,8 +215,8 @@ public class DBHandler {
                     insertStatement.executeUpdate();
                 }
             }
-        } catch (final SQLException err) {
-            err.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Error setting individual " + table , e);
         }
     }
 
@@ -228,7 +232,7 @@ public class DBHandler {
         setIndividualMap(uuid, "customData", customData);
     }
 
-    public void doIndividualError(String uuid, String state, int errorCode, String errorMessage) {
+    public void setIndividualError(String uuid, String state, int errorCode, String errorMessage) {
         try(PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
             statement.setString(1, state);
             statement.setInt(2, errorCode);
@@ -236,8 +240,8 @@ public class DBHandler {
             statement.setString(4, uuid);
 
             statement.executeUpdate();
-        } catch (final SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Error setting individual error", e);
         }
     }
 }

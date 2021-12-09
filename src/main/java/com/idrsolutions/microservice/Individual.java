@@ -99,7 +99,7 @@ public class Individual {
         this.errorCode = String.valueOf(errorCode);
         this.errorMessage = errorMessage == null ? "" : errorMessage;
 
-        DBHandler.INSTANCE.doIndividualError(uuid, state, errorCode, errorMessage);
+        DBHandler.INSTANCE.setIndividualError(uuid, state, errorCode, errorMessage);
     }
 
     /**
@@ -287,7 +287,6 @@ public class Individual {
     public void setCustomData(Map<String, String> customData) {
         this.customData = customData;
 
-        // TODO: Database stuff
         if (databaseReady) DBHandler.INSTANCE.setIndividualCustomData(uuid, customData);
     }
 
