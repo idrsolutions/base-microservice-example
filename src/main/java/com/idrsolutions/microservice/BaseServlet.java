@@ -384,7 +384,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File outputDir = createOutputDirectory(individual.getUuid());
 
-        individual.initDatabase();
+        individual.initialiseInDatabase();
 
         addToQueue(individual, params, inputFile, outputDir, getContextURL(request));
 
@@ -452,7 +452,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
 
-        individual.initDatabase();
+        individual.initialiseInDatabase();
 
         downloadQueue.submit(() -> {
             File inputFile = null;

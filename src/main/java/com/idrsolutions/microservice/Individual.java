@@ -58,7 +58,7 @@ public class Individual {
         state = "queued";
     }
 
-    public void initDatabase() {
+    public void initialiseInDatabase() {
         DBHandler.INSTANCE.putIndividual(this);
         databaseReady = true;
     }
@@ -145,34 +145,6 @@ public class Individual {
         customValues.put(key, value);
 
         DBHandler.INSTANCE.setIndividualCustomValue(uuid, key, value);
-    }
-
-    /**
-     * Adds a key value pair to the individual to pass to the client in GET
-     * requests and callbacks.
-     *
-     * @see com.idrsolutions.microservice.Individual#setValue(String, String)
-     *
-     * @param key the key to be passed to the client
-     * @param value the value mapped to the key
-     */
-    @Deprecated
-    public synchronized void setValue(final String key, final boolean value) {
-        setValue(key, String.valueOf(value));
-    }
-
-    /**
-     * Adds a key value pair to the individual to pass to the client in GET
-     * requests and callbacks.
-     *
-     * @see com.idrsolutions.microservice.Individual#setValue(String, String)
-     *
-     * @param key the key to be passed to the client
-     * @param value the value mapped to the key
-     */
-    @Deprecated
-    public synchronized void setValue(final String key, final int value) {
-        setValue(key, String.valueOf(value));
     }
 
     /**
