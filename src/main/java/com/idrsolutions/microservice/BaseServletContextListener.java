@@ -29,7 +29,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         final ServletContext servletContext = servletContextEvent.getServletContext();
         final File externalFile = new File(getConfigPath() + getConfigName());
 
-        try(InputStream intPropertiesFile = BaseServletContextListener.class.getResourceAsStream("/" + getConfigName())) {
+        try (InputStream intPropertiesFile = BaseServletContextListener.class.getResourceAsStream("/" + getConfigName())) {
             propertiesFile.load(intPropertiesFile);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "IOException thrown when reading default properties file", e);
@@ -48,8 +48,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
         servletContext.setAttribute("properties", propertiesFile);
 
         final ExecutorService convertQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty("conversionThreadCount")));
-        final ExecutorService downloadQueue = Executors.newFixedThreadPool(5);
-        final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(5);
+        final ExecutorService downloadQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty("downloadThreadCount")));
+        final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(Integer.parseInt(propertiesFile.getProperty("callbackThreadCount")));
 
         servletContext.setAttribute("convertQueue", convertQueue);
         servletContext.setAttribute("downloadQueue", downloadQueue);
@@ -82,7 +82,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         if (conversonThreads == null || conversonThreads.isEmpty()) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
             properties.setProperty("conversionThreadCount", "" + availableProcessors);
-            LOG.log(Level.INFO, "Properties value for \"conversionThreadCount\" has not been set. Using a value of " + Runtime.getRuntime().availableProcessors() + " based on available processors.");
+            LOG.log(Level.INFO, "Properties value for \"conversionThreadCount\" has not been set. Using a value of " + availableProcessors + " based on available processors.");
         } else if (!conversonThreads.matches("\\d+") || Integer.parseInt(conversonThreads) == 0) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
             properties.setProperty("conversionThreadCount", "" + availableProcessors);
@@ -93,7 +93,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private static void validateDownloadThreadCount(final Properties properties) {
         final String downloadThreads = properties.getProperty("downloadThreadCount");
         if (downloadThreads == null || downloadThreads.isEmpty() || !downloadThreads.matches("\\d+") || Integer.parseInt(downloadThreads) == 0) {
-            properties.setProperty("downloadThreadCount", "" + downloadThreads);
+            properties.setProperty("downloadThreadCount", "5");
             LOG.log(Level.WARNING, "Properties value for \"downloadThreadCount\" was set to \"" + downloadThreads + "\" but should be a positive integer. Using a value of 5.");
         }
     }
@@ -106,14 +106,10 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
     }
 
-    private static void validateInputPath(final Properties properties) {
+    private void validateInputPath(final Properties properties) {
         final String inputPath = properties.getProperty("inputPath");
         if (inputPath == null || inputPath.isEmpty()) {
-            String inputDir = System.getProperty("user.home");
-            if (!inputDir.endsWith("/") && !inputDir.endsWith("\\")) {
-                inputDir += System.getProperty("file.separator");
-            }
-            inputDir += "/.idr/buildvu-microservice/input/";
+            final String inputDir = getConfigPath() + "input";
             properties.setProperty("inputPath", inputDir);
             LOG.log(Level.WARNING, "Properties value for \"inputPath\" was not set. Using a value of \"" + inputDir + "\"");
         } else if (inputPath.startsWith("~")) {
@@ -121,14 +117,10 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
     }
 
-    private static void validateOutputPath(final Properties properties) {
+    private void validateOutputPath(final Properties properties) {
         final String outputPath = properties.getProperty("outputPath");
         if (outputPath == null || outputPath.isEmpty()) {
-            String outputDir = System.getProperty("user.home");
-            if (!outputDir.endsWith("/") && !outputDir.endsWith("\\")) {
-                outputDir += System.getProperty("file.separator");
-            }
-            outputDir += "/.idr/buildvu-microservice/input/";
+            final String outputDir = getConfigPath() + "output";
             properties.setProperty("outputPath", outputDir);
             LOG.log(Level.WARNING, "Properties value for \"outputPath\" was not set. Using a value of \"" + outputDir + "\"");
         } else if (outputPath.startsWith("~")) {
