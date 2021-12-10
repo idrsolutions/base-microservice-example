@@ -23,8 +23,10 @@ public class DBHandler {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:database.db");
             setupDatabase();
-        } catch (final SQLException | ClassNotFoundException err) {
-            err.printStackTrace();
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to initialise database", e);
+        } catch (final ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Error loading org.sqlite.JDBC", e);
         }
     }
 
@@ -132,6 +134,21 @@ public class DBHandler {
             connection.close();
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Error closing database connection", e);
+        }
+
+        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        final Enumeration<Driver> drivers = DriverManager.getDrivers();
+        while (drivers.hasMoreElements()) {
+            final Driver driver = drivers.nextElement();
+            if (driver.getClass().getClassLoader() == cl) {
+                // This driver was registered by the webapp's ClassLoader, so deregister it:
+                try {
+                    DriverManager.deregisterDriver(driver);
+                } catch (SQLException ex) {
+                    LOG.log(Level.SEVERE, "Error deregistering JDBC driver", ex);
+                }
+
+            }
         }
     }
 

@@ -668,9 +668,4 @@ public abstract class BaseServlet extends HttpServlet {
         }
         return out;
     }
-    @Override
-    public void destroy() {
-        super.destroy();
-        DBHandler.INSTANCE.shutdown();
-    }
 }

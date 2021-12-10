@@ -1,5 +1,7 @@
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.utils.DBHandler;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -24,6 +26,9 @@ public class BaseServletContextListener implements ServletContextListener {
         servletContext.setAttribute("convertQueue", convertQueue);
         servletContext.setAttribute("downloadQueue", downloadQueue);
         servletContext.setAttribute("callbackQueue", callbackQueue);
+
+        // Force the DBHandler to start
+        DBHandler instance = DBHandler.INSTANCE;
     }
 
     @Override
@@ -33,5 +38,7 @@ public class BaseServletContextListener implements ServletContextListener {
         ((ExecutorService) servletContext.getAttribute("convertQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
+
+        DBHandler.INSTANCE.shutdown();
     }
 }
