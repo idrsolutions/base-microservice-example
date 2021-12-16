@@ -90,7 +90,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the time to live of individuals on the server (The duration that the 
+     * Get the time to live of individuals on the server (The duration that the
      * information of an individual is kept on the server)
      *
      * @return individualTTL the time to live of an individual
@@ -118,7 +118,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Set the time to live of individuals on the server (The duration that the 
+     * Set the time to live of individuals on the server (The duration that the
      * information of an individual is kept on the server)
      *
      * @param ttlDuration the time to live of an individual
@@ -199,19 +199,32 @@ public abstract class BaseServlet extends HttpServlet {
 
     /**
      * Allow cross origin requests according to the CORS standard.
+     * This method will not override any existing headers that are already set in the response.
      *
+     * @param request the request from the client
      * @param response the response object to the request from the client
      */
     private static void allowCrossOrigin(final HttpServletRequest request, final HttpServletResponse response) {
-        String origin = request.getHeader("origin");
-        if (origin == null) {
-            origin = "*";
+        final String credentials = response.getHeader("Access-Control-Allow-Credentials");
+        if (credentials == null) {
+            response.addHeader("Access-Control-Allow-Credentials", "true");
         }
-
-        response.addHeader("Access-Control-Allow-Credentials", "true");
-        response.addHeader("Access-Control-Allow-Origin", origin);
-        response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
-        response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin, authorization");
+        final String origin = response.getHeader("Access-Control-Allow-Origin");
+        if (origin == null) {
+            String requestOrigin = request.getHeader("origin");
+            if (requestOrigin == null) {
+                requestOrigin = "*";
+            }
+            response.addHeader("Access-Control-Allow-Origin", requestOrigin);
+        }
+        final String methods = response.getHeader("Access-Control-Allow-Methods");
+        if (methods == null) {
+            response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
+        }
+        final String headers = response.getHeader("Access-Control-Allow-Headers");
+        if (headers == null) {
+            response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin, authorization");
+        }
     }
 
     /**
