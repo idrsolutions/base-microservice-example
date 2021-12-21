@@ -12,6 +12,7 @@ import com.oracle.bmc.objectstorage.requests.CreatePreauthenticatedRequestReques
 import com.oracle.bmc.objectstorage.requests.PutObjectRequest;
 import com.oracle.bmc.objectstorage.responses.CreatePreauthenticatedRequestResponse;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,47 +22,45 @@ import java.util.Date;
  * An implementation of {@link IStorage} that uses Oracle Buckets to store files
  */
 public class OracleStorage extends BaseStorage {
-    final ObjectStorageClient client;
+    private final ObjectStorageClient client;
 
-    final String bucketName = "";
-    final String namespace = "";
+    private final String namespace;
+    private final String bucketName;
 
     /**
-     * Uses the profile named "DEFAULT" in the OCI Config File at "~/.oci/config"
+     * Authenticates using the
      * @param region The Oracle Region
+     * @param configFilePath The path to the OCI config file containing the authentication profiles, use null for the default file at "~/.oci/config"
+     * @param profile The profile inside the config file, use null for the default profile
+     * @param namespace The namespace of the bucket
+     * @param bucketName the name of the bucket that the converted files should be uploaded to
      * @throws IOException if the credentials file is inaccessible
      */
-    public OracleStorage(Region region) throws IOException {
-        final ConfigFileReader.ConfigFile configFile = ConfigFileReader.parseDefault();
+    public OracleStorage(Region region, @Nullable String configFilePath, @Nullable String profile, String namespace, String bucketName) throws IOException {
+        final ConfigFileReader.ConfigFile configFile= configFilePath != null ? ConfigFileReader.parse(configFilePath, profile) : ConfigFileReader.parseDefault(profile);
 
         final AuthenticationDetailsProvider provider = new ConfigFileAuthenticationDetailsProvider(configFile);
 
         client = new ObjectStorageClient(provider);
         client.setRegion(region);
-    }
 
-    /**
-     * Uses the specified profile in the OCI Config File at "~/.oci/config"
-     * @param region The Oracle Region
-     * @throws IOException if the credentials file is inaccessible
-     */
-    public OracleStorage(Region region, String profile) throws IOException {
-        final ConfigFileReader.ConfigFile configFile = ConfigFileReader.parseDefault(profile);
-
-        final AuthenticationDetailsProvider provider = new ConfigFileAuthenticationDetailsProvider(configFile);
-
-        client = new ObjectStorageClient(provider);
-        client.setRegion(region);
+        this.namespace = namespace;
+        this.bucketName = bucketName;
     }
 
     /**
      * Authenticates using the provided implementation of {@link com.oracle.bmc.auth.BasicAuthenticationDetailsProvider}
      * @param region The Oracle Region
      * @param auth The user credentials for Oracle Cloud
+     * @param namespace The namespace of the bucket
+     * @param bucketName the name of the bucket that the converted files should be uploaded to
      */
-    public OracleStorage(Region region, BasicAuthenticationDetailsProvider auth) {
+    public OracleStorage(Region region, BasicAuthenticationDetailsProvider auth, String namespace, String bucketName) {
         client = new ObjectStorageClient(auth);
         client.setRegion(region);
+
+        this.namespace = namespace;
+        this.bucketName = bucketName;
     }
 
     /**

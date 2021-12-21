@@ -26,35 +26,46 @@ import java.time.OffsetDateTime;
 public class AzureStorage extends BaseStorage {
     final BlobServiceClient client;
 
-    final String containerName = "";
-    final String accountName = "";
+    private final String accountName;
+    private final String containerName;
 
     /**
      * Authenticates using Shared Key
      * @param auth The authentication for Azure
+     * @param accountName The storage account name
+     * @param containerName The name of the container within the storage account that the converted files should be uploaded to
      */
-    public AzureStorage(StorageSharedKeyCredential auth) {
+    public AzureStorage(StorageSharedKeyCredential auth, String accountName, String containerName) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
+        this.accountName = accountName;
+        this.containerName = containerName;
     }
 
     /**
      * Authenticates using SAS
      * @param auth The authentication for Azure
+     * @param accountName The storage account name
+     * @param containerName The name of the container within the storage account
      */
-    public AzureStorage(AzureSasCredential auth) {
+    public AzureStorage(AzureSasCredential auth, String accountName, String containerName) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
+        this.accountName = accountName;
+        this.containerName = containerName;
     }
 
     /**
      * Authenticates using a Token
      * @param auth The authentication for Azure
+     * @param accountName The storage account name
+     * @param containerName The name of the container within the storage account
      */
-    public AzureStorage(TokenCredential auth) {
+    public AzureStorage(TokenCredential auth, String accountName, String containerName) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
+        this.accountName = accountName;
+        this.containerName = containerName;
     }
 
     /**
-     *
      * @inheritDoc
      */
     @Override

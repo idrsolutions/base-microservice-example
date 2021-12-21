@@ -18,28 +18,38 @@ import java.util.Date;
 public class AWSStorage extends BaseStorage {
     final AmazonS3 s3Client;
 
-    String bucketName = "idr-pdf-dest";
-    String basePath = "";
+    protected final String bucketName;
+    protected final String basePath;
 
-    protected AWSStorage(AmazonS3 s3Client) {
+    protected AWSStorage(AmazonS3 s3Client, String bucketName, String basePath) {
         this.s3Client = s3Client;
+        this.bucketName = bucketName;
+        this.basePath = basePath;
     }
 
     /**
      * Uses Environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
      * @param region The AWS Region
+     * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
+     * @param basePath The path inside the bucket that the converted files should end up in
      */
-    public AWSStorage(Regions region) {
+    public AWSStorage(Regions region, String bucketName, String basePath) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build();
+        this.bucketName = bucketName;
+        this.basePath = basePath;
     }
 
     /**
      * Allows passing any form of AWS authentication
      * @param region The AWS Region
      * @param credentialsProvider The user credentials for AWS
+     * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
+     * @param basePath The path inside the bucket that the converted files should end up in
      */
-    public AWSStorage(Regions region, AWSCredentialsProvider credentialsProvider) {
+    public AWSStorage(Regions region, AWSCredentialsProvider credentialsProvider, String bucketName, String basePath) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).withCredentials(credentialsProvider).build();
+        this.bucketName = bucketName;
+        this.basePath = basePath;
     }
 
     /**
