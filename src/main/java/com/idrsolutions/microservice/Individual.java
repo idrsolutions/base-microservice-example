@@ -68,7 +68,7 @@ public class Individual {
      * This is intended for use by the database, as this method does not create an entry inside the database
      * @param uuid the uuid to identify this individual
      * @param isAlive the alive state of the individual
-     * @param timestamp the creation timestamp of the indivual
+     * @param timestamp the creation timestamp of the individual
      * @param state the state of the individual
      * @param errorCode the error code of the Individual
      * @param errorMessage the error message of the Individual

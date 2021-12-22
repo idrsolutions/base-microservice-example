@@ -28,6 +28,7 @@ public class BaseServletContextListener implements ServletContextListener {
         servletContext.setAttribute("callbackQueue", callbackQueue);
 
         // Force the DBHandler to start
+        @SuppressWarnings("unused")
         DBHandler instance = DBHandler.INSTANCE;
     }
 
@@ -38,7 +39,5 @@ public class BaseServletContextListener implements ServletContextListener {
         ((ExecutorService) servletContext.getAttribute("convertQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
-
-        DBHandler.INSTANCE.shutdown();
     }
 }

@@ -3,9 +3,11 @@ package com.idrsolutions.microservice.utils;
 
 import com.idrsolutions.microservice.Individual;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,17 +18,20 @@ public class DBHandler {
     public static final DBHandler INSTANCE = new DBHandler();
     private static final Logger LOG = Logger.getLogger(DBHandler.class.getName());
 
-    Connection connection;
+    final DataSource dataSource;
 
     private DBHandler() {
         try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:database.db");
+            this.dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/mydb");
+        } catch (NamingException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("jdbc/mydb is missing in JNDI!", e);
+        }
+
+        try {
             setupDatabase();
         } catch (final SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialise database", e);
-        } catch (final ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Error loading org.sqlite.JDBC", e);
         }
     }
 
@@ -35,7 +40,8 @@ public class DBHandler {
      * @throws SQLException An sql Exception
      */
     private void setupDatabase() throws SQLException {
-        try(Statement statement = connection.createStatement()) {
+        try(Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
 //            // Clear Tables
 //            statement.executeUpdate("DROP TABLE IF EXISTS settings");
 //            statement.executeUpdate("DROP TABLE IF EXISTS customValues");
@@ -58,21 +64,21 @@ public class DBHandler {
                     "key VARCHAR(70), " +
                     "value VARCHAR(255), " +
                     "PRIMARY KEY (uuid, key), " +
-                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customValues (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
                     "value TEXT, " +
                     "PRIMARY KEY (uuid, key), " +
-                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customData (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
-                    "value TEXT, " +
+                    "vayolue TEXT, " +
                     "PRIMARY KEY (uuid, key), " +
-                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE" +
+                    "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
         }
     }
@@ -84,7 +90,8 @@ public class DBHandler {
      * @throws SQLException an SQL Exception
      */
     public Individual getIndividual(String id) throws SQLException {
-        try(PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;");
             PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {
             individualStatement.setString(1, id);
@@ -126,38 +133,33 @@ public class DBHandler {
         }
     }
 
-    /**
-     * Closes the database connections
-     */
-    public void shutdown() {
-        try {
-            connection.close();
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error closing database connection", e);
-        }
-
-        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        final Enumeration<Driver> drivers = DriverManager.getDrivers();
-        while (drivers.hasMoreElements()) {
-            final Driver driver = drivers.nextElement();
-            if (driver.getClass().getClassLoader() == cl) {
-                // This driver was registered by the webapp's ClassLoader, so deregister it:
-                try {
-                    DriverManager.deregisterDriver(driver);
-                } catch (SQLException ex) {
-                    LOG.log(Level.SEVERE, "Error deregistering JDBC driver", ex);
-                }
-
-            }
-        }
-    }
+//    /**
+//     * Closes the database connections
+//     */
+//    public void shutdown() {
+//        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+//        final Enumeration<Driver> drivers = DriverManager.getDrivers();
+//        while (drivers.hasMoreElements()) {
+//            final Driver driver = drivers.nextElement();
+//            if (driver.getClass().getClassLoader() == cl) {
+//                // This driver was registered by the webapp's ClassLoader, so deregister it:
+//                try {
+//                    DriverManager.deregisterDriver(driver);
+//                } catch (SQLException ex) {
+//                    LOG.log(Level.SEVERE, "Error deregistering JDBC driver", ex);
+//                }
+//
+//            }
+//        }
+//    }
 
     /**
      * Inserts the given individual into the database
      * @param individual the individual to insert into the database
      */
     public void putIndividual(Individual individual) {
-        try(PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
             individualStatement.setString(1, individual.getUuid());
             individualStatement.setBoolean(2, individual.isAlive());
             individualStatement.setLong(3, individual.getTimestamp());
@@ -179,7 +181,8 @@ public class DBHandler {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     public void cleanOldEntries(long TTL) {
-        try(PreparedStatement statement = connection.prepareStatement("DELETE FROM conversions WHERE theTime < ?")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM conversions WHERE theTime < ?")) {
             statement.setFloat(1, new Date().getTime() - TTL);
             statement.executeUpdate();
         } catch (final SQLException e) {
@@ -188,7 +191,8 @@ public class DBHandler {
     }
 
     public void setIndividualCustomValue(String uuid, String key, String value) {
-        try(PreparedStatement statement = connection.prepareStatement("REPLACE INTO customValues VALUES (?, ?, ?) ")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement("REPLACE INTO customValues VALUES (?, ?, ?) ")) {
             statement.setString(1, uuid);
             statement.setString(2, key);
             statement.setString(3, value);
@@ -199,7 +203,8 @@ public class DBHandler {
     }
 
     public void setIndividualAlive(String uuid, boolean alive) {
-        try(PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
             statement.setBoolean(1, alive);
             statement.setString(2, uuid);
             statement.executeUpdate();
@@ -209,7 +214,8 @@ public class DBHandler {
     }
 
     public void setIndividualState(String uuid, String state) {
-        try(PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
             statement.setString(1, state);
             statement.setString(2, uuid);
             statement.executeUpdate();
@@ -219,7 +225,8 @@ public class DBHandler {
     }
 
     public void setIndividualMap(String uuid, String table, Map<String, String> map) {
-        try(PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM " + table + " WHERE uuid = ?");
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM " + table + " WHERE uuid = ?");
             PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?, ?)")) {
             deleteStatement.setString(1, uuid);
             deleteStatement.executeUpdate();
@@ -250,7 +257,8 @@ public class DBHandler {
     }
 
     public void setIndividualError(String uuid, String state, int errorCode, String errorMessage) {
-        try(PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
             statement.setString(1, state);
             statement.setInt(2, errorCode);
             statement.setString(3, errorMessage);
