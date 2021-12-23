@@ -21,18 +21,28 @@ public class DBHandler {
     final DataSource dataSource;
 
     private DBHandler() {
-        try {
-            this.dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/mydb");
-        } catch (NamingException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("jdbc/mydb is missing in JNDI!", e);
-        }
+        dataSource = setupDatasource();
 
         try {
             setupDatabase();
         } catch (final SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialise database", e);
         }
+    }
+
+    private DataSource setupDatasource() {
+        try {
+            // Attempt to grab from tomcat/jetty
+            return (DataSource) new InitialContext().lookup("java:comp/env/jdbc/mydb");
+
+        } catch (NamingException ignored) {}
+
+        try {
+            // Attempt to grab from Payara/Glassfish
+            return (DataSource) new InitialContext().lookup("jdbc/mydb");
+        } catch (NamingException ignored) {}
+
+        throw new IllegalStateException("Failed to find database on JDNI");
     }
 
     /**
