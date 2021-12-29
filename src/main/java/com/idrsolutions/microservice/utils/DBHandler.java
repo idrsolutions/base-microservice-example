@@ -178,12 +178,13 @@ public class DBHandler {
             individualStatement.setString(6, individual.getErrorMessage());
 
             individualStatement.executeUpdate();
-
-            setIndividualSettings(individual.getUuid(), individual.getSettings());
-            setIndividualCustomValues(individual.getUuid(), individual.getCustomValues());
         } catch (final SQLException e) {
             LOG.log(Level.SEVERE, "Error Inserting individual into the database", e);
         }
+
+        // As these create their own connection, we should execute this outside of the above try so the connection object can be released and reused
+        setIndividualSettings(individual.getUuid(), individual.getSettings());
+        setIndividualCustomValues(individual.getUuid(), individual.getCustomValues());
     }
 
     /**
