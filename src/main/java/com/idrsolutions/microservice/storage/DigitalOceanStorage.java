@@ -6,7 +6,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
 /**
  * An implementation of {@link IStorage} that uses DigitalOcean Spaces to store files
- * This reuses {@link AWSStorage} by chaning the endpoint as the API is compatible
+ * This reuses {@link AWSStorage} by chaining the endpoint as the API is compatible
  */
 public class DigitalOceanStorage extends AWSStorage {
     /**
