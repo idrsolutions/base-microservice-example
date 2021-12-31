@@ -16,6 +16,12 @@ import java.util.logging.Logger;
 
 public abstract class BaseServletContextListener implements ServletContextListener {
 
+    private static final String CONVERSION_COUNT_PROPERTY_NAME = "conversionThreadCount";
+    private static final String DOWNLOAD_COUNT_PROPERTY_NAME = "downloadThreadCount";
+    private static final String CALLBACK_COUNT_PROPERTY_NAME = "callbackThreadCount";
+    private static final String INPUT_PROPERTY_NAME = "inputPath";
+    private static final String OUTPUT_PROPERTY_NAME = "outputPath";
+
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
     public abstract String getConfigPath();
@@ -47,16 +53,16 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         servletContext.setAttribute("properties", propertiesFile);
 
-        final ExecutorService convertQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty("conversionThreadCount")));
-        final ExecutorService downloadQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty("downloadThreadCount")));
-        final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(Integer.parseInt(propertiesFile.getProperty("callbackThreadCount")));
+        final ExecutorService convertQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty(CONVERSION_COUNT_PROPERTY_NAME)));
+        final ExecutorService downloadQueue = Executors.newFixedThreadPool(Integer.parseInt(propertiesFile.getProperty(DOWNLOAD_COUNT_PROPERTY_NAME)));
+        final ScheduledExecutorService callbackQueue = Executors.newScheduledThreadPool(Integer.parseInt(propertiesFile.getProperty(CALLBACK_COUNT_PROPERTY_NAME)));
 
         servletContext.setAttribute("convertQueue", convertQueue);
         servletContext.setAttribute("downloadQueue", downloadQueue);
         servletContext.setAttribute("callbackQueue", callbackQueue);
 
-        BaseServlet.setInputPath(propertiesFile.getProperty("inputPath"));
-        BaseServlet.setOutputPath(propertiesFile.getProperty("outputPath"));
+        BaseServlet.setInputPath(propertiesFile.getProperty(INPUT_PROPERTY_NAME));
+        BaseServlet.setOutputPath(propertiesFile.getProperty(OUTPUT_PROPERTY_NAME));
     }
 
     @Override
@@ -78,53 +84,59 @@ public abstract class BaseServletContextListener implements ServletContextListen
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
-        final String conversonThreads = properties.getProperty("conversionThreadCount");
+        final String conversonThreads = properties.getProperty(CONVERSION_COUNT_PROPERTY_NAME);
         if (conversonThreads == null || conversonThreads.isEmpty()) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
-            properties.setProperty("conversionThreadCount", "" + availableProcessors);
-            LOG.log(Level.INFO, "Properties value for \"conversionThreadCount\" has not been set. Using a value of " + availableProcessors + " based on available processors.");
+            properties.setProperty(CONVERSION_COUNT_PROPERTY_NAME, "" + availableProcessors);
+            final String message = String.format("Properties value for \"conversionThreadCount\" has not been set. Using a value of \"%d\" based on available processors.", availableProcessors);
+            LOG.log(Level.INFO, message);
         } else if (!conversonThreads.matches("\\d+") || Integer.parseInt(conversonThreads) == 0) {
             final int availableProcessors = Runtime.getRuntime().availableProcessors();
-            properties.setProperty("conversionThreadCount", "" + availableProcessors);
-            LOG.log(Level.WARNING, "Properties value for \"conversionThreadCount\" was set to \"" + conversonThreads + "\" but should be a positive integer. Using a value of " + availableProcessors + " based on available processors.");
+            properties.setProperty(CONVERSION_COUNT_PROPERTY_NAME, "" + availableProcessors);
+            final String message = String.format("Properties value for \"conversionThreadCount\" was set to \"%s\" but should be a positive integer. Using a value of \"%d\" based on available processors.", conversonThreads, availableProcessors);
+            LOG.log(Level.WARNING, message);
         }
     }
 
     private static void validateDownloadThreadCount(final Properties properties) {
-        final String downloadThreads = properties.getProperty("downloadThreadCount");
+        final String downloadThreads = properties.getProperty(DOWNLOAD_COUNT_PROPERTY_NAME);
         if (downloadThreads == null || downloadThreads.isEmpty() || !downloadThreads.matches("\\d+") || Integer.parseInt(downloadThreads) == 0) {
-            properties.setProperty("downloadThreadCount", "5");
-            LOG.log(Level.WARNING, "Properties value for \"downloadThreadCount\" was set to \"" + downloadThreads + "\" but should be a positive integer. Using a value of 5.");
+            properties.setProperty(DOWNLOAD_COUNT_PROPERTY_NAME, "5");
+            final String message = String.format("Properties value for \"downloadThreadCount\" was set to \"%s\" but should be a positive integer. Using a value of 5.", downloadThreads);
+            LOG.log(Level.WARNING, message);
         }
     }
 
     private static void validateCallbackThreadCount(final Properties properties) {
-        final String callbackThreads = properties.getProperty("callbackThreadCount");
+        final String callbackThreads = properties.getProperty(CALLBACK_COUNT_PROPERTY_NAME);
         if (callbackThreads == null || callbackThreads.isEmpty() || !callbackThreads.matches("\\d+") || Integer.parseInt(callbackThreads) == 0) {
-            properties.setProperty("callbackThreadCount", "5");
-            LOG.log(Level.WARNING, "Properties value for \"callbackThreadCount\" was set to \"" + callbackThreads + "\" but should be a positive integer. Using a value of 5.");
+            properties.setProperty(CALLBACK_COUNT_PROPERTY_NAME, "5");
+            final String message = String.format("Properties value for \"callbackThreadCount\" was set to \"%s\" but should be a positive integer. Using a value of 5.", callbackThreads);
+            LOG.log(Level.WARNING, message);
         }
     }
 
     private void validateInputPath(final Properties properties) {
-        final String inputPath = properties.getProperty("inputPath");
+        final String inputPath = properties.getProperty(INPUT_PROPERTY_NAME);
         if (inputPath == null || inputPath.isEmpty()) {
             final String inputDir = getConfigPath() + "input";
-            properties.setProperty("inputPath", inputDir);
-            LOG.log(Level.WARNING, "Properties value for \"inputPath\" was not set. Using a value of \"" + inputDir + "\"");
+            properties.setProperty(INPUT_PROPERTY_NAME, inputDir);
+            final String message = String.format("Properties value for \"inputPath\" was not set. Using a value of \"%s\"", inputDir);
+            LOG.log(Level.WARNING, message);
         } else if (inputPath.startsWith("~")) {
-            properties.setProperty("inputPath", System.getProperty("user.home") + inputPath.substring(1));
+            properties.setProperty(INPUT_PROPERTY_NAME, System.getProperty("user.home") + inputPath.substring(1));
         }
     }
 
     private void validateOutputPath(final Properties properties) {
-        final String outputPath = properties.getProperty("outputPath");
+        final String outputPath = properties.getProperty(OUTPUT_PROPERTY_NAME);
         if (outputPath == null || outputPath.isEmpty()) {
             final String outputDir = getConfigPath() + "output";
-            properties.setProperty("outputPath", outputDir);
-            LOG.log(Level.WARNING, "Properties value for \"outputPath\" was not set. Using a value of \"" + outputDir + "\"");
+            properties.setProperty(OUTPUT_PROPERTY_NAME, outputDir);
+            final String message = String.format("Properties value for \"outputPath\" was not set. Using a value of \"%s\"", outputDir);
+            LOG.log(Level.WARNING, message);
         } else if (outputPath.startsWith("~")) {
-            properties.setProperty("outputPath", System.getProperty("user.home") + outputPath.substring(1));
+            properties.setProperty(OUTPUT_PROPERTY_NAME, System.getProperty("user.home") + outputPath.substring(1));
         }
     }
 
