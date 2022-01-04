@@ -73,10 +73,11 @@ public class AzureStorage extends BaseStorage {
         BlobContainerClient containerClient;
         try {
             containerClient = client.createBlobContainer(containerName);
-        } catch (BlobStorageException ex) {
+        } catch (BlobStorageException e) {
             // The container may already exist, so don't throw an error
-            if (!ex.getErrorCode().equals(BlobErrorCode.CONTAINER_ALREADY_EXISTS)) {
-                throw ex;
+            if (!e.getErrorCode().equals(BlobErrorCode.CONTAINER_ALREADY_EXISTS)) {
+                LOG.severe(e.getMessage());
+                return null;
             }
             containerClient = client.getBlobContainerClient(containerName);
         }
