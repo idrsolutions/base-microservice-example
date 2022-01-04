@@ -50,6 +50,8 @@
             <version>1.1</version>
         </dependency>
 
+        <!--Implicitly added by a few of the cloud service libraries-->
+        <!--Needs to be defined to ensure a version all the libraries support is loaded-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
