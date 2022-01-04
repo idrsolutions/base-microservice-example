@@ -37,7 +37,7 @@ public class OracleStorage extends BaseStorage {
      * @throws IOException if the credentials file is inaccessible
      */
     public OracleStorage(Region region, @Nullable String configFilePath, @Nullable String profile, String namespace, String bucketName) throws IOException {
-        final ConfigFileReader.ConfigFile configFile= configFilePath != null ? ConfigFileReader.parse(configFilePath, profile) : ConfigFileReader.parseDefault(profile);
+        final ConfigFileReader.ConfigFile configFile = configFilePath != null ? ConfigFileReader.parse(configFilePath, profile) : ConfigFileReader.parseDefault(profile);
 
         final AuthenticationDetailsProvider provider = new ConfigFileAuthenticationDetailsProvider(configFile);
 
