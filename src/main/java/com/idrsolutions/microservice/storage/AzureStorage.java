@@ -59,7 +59,7 @@ public class AzureStorage extends BaseStorage {
      * @param accountName The storage account name
      * @param containerName The name of the container within the storage account
      */
-    public AzureStorage(TokenCredential auth, String accountName, String containerName) {
+    public AzureStorage(final TokenCredential auth, final String accountName, final String containerName) {
         this.client = new BlobServiceClientBuilder().credential(auth).endpoint("https://" + accountName + ".blob.core.windows.net").buildClient();
         this.accountName = accountName;
         this.containerName = containerName;
@@ -69,7 +69,7 @@ public class AzureStorage extends BaseStorage {
      * @inheritDoc
      */
     @Override
-    public String put(byte[] fileToUpload, String fileName, String uuid) {
+    public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         BlobContainerClient containerClient;
         try {
             containerClient = client.createBlobContainer(containerName);

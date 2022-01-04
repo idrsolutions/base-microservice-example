@@ -25,7 +25,7 @@ public class GCPStorage extends BaseStorage {
      * @param projectID The project ID Containing the bucket
      * @param bucketName The name of the bucket that the converted files should be uploaded to
      */
-    public GCPStorage(String projectID, String bucketName) {
+    public GCPStorage(final String projectID, final String bucketName) {
         // Will fetch from the "GOOGLE_APPLICATION_CREDENTIALS" environment variable
         storage = StorageOptions.newBuilder().setProjectId(projectID).build().getService();
         this.projectID = projectID;
@@ -39,7 +39,7 @@ public class GCPStorage extends BaseStorage {
      * @param bucketName The name of the bucket that the converted files should be uploaded to
      * @throws IOException if it cannot find or access the credentialsPath
      */
-    public GCPStorage(String credentialsPath, String projectID, String bucketName) throws IOException {
+    public GCPStorage(final String credentialsPath, final String projectID, final String bucketName) throws IOException {
         GoogleCredentials credentials;
 
         try (FileInputStream fileStream = new FileInputStream(credentialsPath)) {
@@ -55,7 +55,7 @@ public class GCPStorage extends BaseStorage {
      * @inheritDoc
      */
     @Override
-    public String put(byte[] fileToUpload, String fileName, String uuid) {
+    public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
         return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
     }

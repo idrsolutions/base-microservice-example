@@ -14,12 +14,12 @@ public class FileStorage extends BaseStorage {
      * @inheritDoc
      */
     @Override
-    public String put(byte[] fileToUpload, String fileName, String uuid) {
+    public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try {
             final File zipOut = new File(BaseServlet.getOutputPath() + uuid + "/" + fileName + ".zip");
             if (!zipOut.exists()) zipOut.createNewFile();
 
-            try (final FileOutputStream fileWriter = new FileOutputStream(zipOut)) {
+            try (FileOutputStream fileWriter = new FileOutputStream(zipOut)) {
                 fileWriter.write(fileToUpload);
             }
         } catch(IOException e){

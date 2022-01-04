@@ -46,7 +46,7 @@ public class AWSStorage extends BaseStorage {
      * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
      * @param basePath The path inside the bucket that the converted files should end up in
      */
-    public AWSStorage(Regions region, AWSCredentialsProvider credentialsProvider, String bucketName, String basePath) {
+    public AWSStorage(final Regions region, final AWSCredentialsProvider credentialsProvider, final String bucketName, final String basePath) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).withCredentials(credentialsProvider).build();
         this.bucketName = bucketName;
         this.basePath = basePath;
@@ -56,7 +56,7 @@ public class AWSStorage extends BaseStorage {
      * @inheritDoc
      */
     @Override
-    public String put(byte[] fileToUpload, String fileName, String uuid) {
+    public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
             final ObjectMetadata metadata = new ObjectMetadata();
             // Assume zip file

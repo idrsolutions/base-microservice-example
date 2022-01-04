@@ -15,7 +15,7 @@ public abstract class BaseStorage implements IStorage {
      * @inheritDoc
      */
     @Override
-    public String put(File fileToUpload, String fileName, String uuid) {
+    public String put(final File fileToUpload, final String fileName, final String uuid) {
         try {
             return put(Files.readAllBytes(fileToUpload.toPath()), fileName, uuid);
         } catch (IOException e) {

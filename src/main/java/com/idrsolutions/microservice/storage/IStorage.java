@@ -10,7 +10,7 @@ public interface IStorage {
      * @param uuid The UUID of the file being uploaded
      * @return A URI to access the uploaded file, or null if the upload was unsuccessful
      */
-    String put(byte[] fileToUpload, String fileName, String uuid);
+    String put(final byte[] fileToUpload, final String fileName, final String uuid);
 
     /**
      * Places the given file inside the storage
@@ -19,5 +19,5 @@ public interface IStorage {
      * @param uuid The UUID of the file being uploaded
      * @return A URI to access the uploaded file, or null if the upload was unsuccessful
      */
-    String put(File fileToUpload, String fileName, String uuid);
+    String put(final File fileToUpload, final String fileName, final String uuid);
 }

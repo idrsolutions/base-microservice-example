@@ -15,7 +15,7 @@ public class DigitalOceanStorage extends AWSStorage {
      * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
      * @param basePath The path inside the bucket that the converted files should end up in
      */
-    DigitalOceanStorage(String region, String bucketName, String basePath) {
+    DigitalOceanStorage(final String region, final String bucketName, final String basePath) {
         super(AmazonS3ClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("https://" + region + ".digitaloceanspaces.com", region)).build(), bucketName, basePath);
     }
 
@@ -26,7 +26,7 @@ public class DigitalOceanStorage extends AWSStorage {
      * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
      * @param basePath The path inside the bucket that the converted files should end up in
      */
-    public DigitalOceanStorage(String region, AWSCredentialsProvider credentialsProvider, String bucketName, String basePath) {
+    public DigitalOceanStorage(final String region, final AWSCredentialsProvider credentialsProvider, final String bucketName, final String basePath) {
         super(AmazonS3ClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("https://" + region + ".digitaloceanspaces.com", region)).withCredentials(credentialsProvider).build(), bucketName, basePath);
     }
 }

@@ -36,7 +36,7 @@ public class OracleStorage extends BaseStorage {
      * @param bucketName the name of the bucket that the converted files should be uploaded to
      * @throws IOException if the credentials file is inaccessible
      */
-    public OracleStorage(Region region, @Nullable String configFilePath, @Nullable String profile, String namespace, String bucketName) throws IOException {
+    public OracleStorage(final Region region, final @Nullable String configFilePath, final @Nullable String profile, final String namespace, final String bucketName) throws IOException {
         final ConfigFileReader.ConfigFile configFile = configFilePath != null ? ConfigFileReader.parse(configFilePath, profile) : ConfigFileReader.parseDefault(profile);
 
         final AuthenticationDetailsProvider provider = new ConfigFileAuthenticationDetailsProvider(configFile);
@@ -55,7 +55,7 @@ public class OracleStorage extends BaseStorage {
      * @param namespace The namespace of the bucket
      * @param bucketName the name of the bucket that the converted files should be uploaded to
      */
-    public OracleStorage(Region region, BasicAuthenticationDetailsProvider auth, String namespace, String bucketName) {
+    public OracleStorage(final Region region, final BasicAuthenticationDetailsProvider auth, final String namespace, final String bucketName) {
         client = new ObjectStorageClient(auth);
         client.setRegion(region);
 
@@ -67,7 +67,7 @@ public class OracleStorage extends BaseStorage {
      * @inheritDoc
      */
     @Override
-    public String put(byte[] fileToUpload, String fileName, String uuid) {
+    public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)) {
             final String dest = uuid + "/" + fileName;
 
