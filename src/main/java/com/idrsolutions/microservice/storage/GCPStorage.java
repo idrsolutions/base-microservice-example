@@ -26,6 +26,7 @@ public class GCPStorage extends BaseStorage {
      * @param bucketName The name of the bucket that the converted files should be uploaded to
      */
     public GCPStorage(String projectID, String bucketName) {
+        // Will fetch from the "GOOGLE_APPLICATION_CREDENTIALS" environment variable
         storage = StorageOptions.newBuilder().setProjectId(projectID).build().getService();
         this.projectID = projectID;
         this.bucketName = bucketName;
@@ -45,7 +46,6 @@ public class GCPStorage extends BaseStorage {
             credentials = GoogleCredentials.fromStream(fileStream).createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
         }
 
-        // Will fetch from the "GOOGLE_APPLICATION_CREDENTIALS" environment variable
         storage = StorageOptions.newBuilder().setProjectId(projectID).setCredentials(credentials).build().getService();
         this.projectID = projectID;
         this.bucketName = bucketName;
