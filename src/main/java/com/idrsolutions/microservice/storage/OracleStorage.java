@@ -99,7 +99,7 @@ public class OracleStorage extends BaseStorage {
 
             return client.getEndpoint() + response.getPreauthenticatedRequest().getAccessUri();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
         return null;
     }

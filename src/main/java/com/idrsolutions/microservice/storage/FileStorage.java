@@ -23,7 +23,7 @@ public class FileStorage extends BaseStorage {
                 fileWriter.write(fileToUpload);
             }
         } catch(IOException e){
-            e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
         return null;
     }

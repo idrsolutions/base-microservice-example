@@ -88,7 +88,7 @@ public class AzureStorage extends BaseStorage {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
             blobClient.upload(fileStream, fileToUpload.length);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.severe(e.getMessage());
             return null;
         }
 

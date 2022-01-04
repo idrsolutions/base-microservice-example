@@ -69,7 +69,7 @@ public class AWSStorage extends BaseStorage {
 
             return s3Client.generatePresignedUrl(bucketName, basePath + uuid + "/" + fileName, expiration).toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.severe(e.getMessage());
         }
         return null;
     }
