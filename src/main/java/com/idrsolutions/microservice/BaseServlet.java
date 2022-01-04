@@ -516,10 +516,10 @@ public abstract class BaseServlet extends HttpServlet {
         });
     }
 
-    protected void finishConversion(Individual individual, File output, String destName) throws IOException {
-        byte[] zipFile = ZipHelper.zipFolderInMemory(output.getPath(), true);
+    protected void finishConversion(final Individual individual, final File output, final String destName) throws IOException {
+        final byte[] zipFile = ZipHelper.zipFolderInMemory(output.getPath(), true);
 
-        String downloadURL = storage.put(zipFile, destName + ".zip", individual.getUuid());
+        final String downloadURL = storage.put(zipFile, destName + ".zip", individual.getUuid());
 
         individual.setValue("downloadUrl", downloadURL);
 
