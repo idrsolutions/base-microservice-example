@@ -83,7 +83,7 @@ public class AzureStorage extends BaseStorage {
 
         final String dest = uuid + "/" + fileName;
 
-        BlockBlobClient blobClient = containerClient.getBlobClient(dest).getBlockBlobClient();
+        final BlockBlobClient blobClient = containerClient.getBlobClient(dest).getBlockBlobClient();
 
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
             blobClient.upload(fileStream, fileToUpload.length);
@@ -95,11 +95,11 @@ public class AzureStorage extends BaseStorage {
         // Set the filename using the content disposition HTTP Header to avoid the downloaded file also containing the UUID
         blobClient.setHttpHeaders(new BlobHttpHeaders().setContentDisposition("attachment; filename=" + fileName));
 
-        BlobServiceSasSignatureValues sas = new BlobServiceSasSignatureValues(OffsetDateTime.now().plusMinutes(30), new BlobSasPermission().setReadPermission(true));
+        final BlobServiceSasSignatureValues sas = new BlobServiceSasSignatureValues(OffsetDateTime.now().plusMinutes(30), new BlobSasPermission().setReadPermission(true));
 
-        String test = blobClient.generateSas(sas);
+        final String test = blobClient.generateSas(sas);
 
-        URL blobURL = new BlobUrlParts()
+        final URL blobURL = new BlobUrlParts()
                 .setScheme("https://")
                 .setHost(accountName + ".blob.core.windows.net")
                 .setContainerName(containerName)

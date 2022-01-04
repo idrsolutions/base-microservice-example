@@ -71,7 +71,7 @@ public class OracleStorage extends BaseStorage {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)) {
             final String dest = uuid + "/" + fileName;
 
-            PutObjectRequest objectRequest = PutObjectRequest.builder()
+            final PutObjectRequest objectRequest = PutObjectRequest.builder()
                     .bucketName(bucketName)
                     .namespaceName(namespace)
                     .objectName(dest)
@@ -81,7 +81,7 @@ public class OracleStorage extends BaseStorage {
 
             client.putObject(objectRequest);
 
-            CreatePreauthenticatedRequestDetails preauthenticatedDetails = CreatePreauthenticatedRequestDetails.builder()
+            final CreatePreauthenticatedRequestDetails preauthenticatedDetails = CreatePreauthenticatedRequestDetails.builder()
                     .name("Converted PDF " + dest + " Download")
                     .objectName(dest)
                     .accessType(CreatePreauthenticatedRequestDetails.AccessType.ObjectRead)
@@ -89,13 +89,13 @@ public class OracleStorage extends BaseStorage {
                     .bucketListingAction(PreauthenticatedRequest.BucketListingAction.Deny)
                     .build();
 
-            CreatePreauthenticatedRequestRequest preauthenticatedRequest = CreatePreauthenticatedRequestRequest.builder()
+            final CreatePreauthenticatedRequestRequest preauthenticatedRequest = CreatePreauthenticatedRequestRequest.builder()
                     .bucketName(bucketName)
                     .namespaceName(namespace)
                     .createPreauthenticatedRequestDetails(preauthenticatedDetails)
                     .build();
 
-            CreatePreauthenticatedRequestResponse response = client.createPreauthenticatedRequest(preauthenticatedRequest);
+            final CreatePreauthenticatedRequestResponse response = client.createPreauthenticatedRequest(preauthenticatedRequest);
 
             return client.getEndpoint() + response.getPreauthenticatedRequest().getAccessUri();
         } catch (IOException e) {

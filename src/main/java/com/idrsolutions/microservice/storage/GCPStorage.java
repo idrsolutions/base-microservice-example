@@ -56,7 +56,7 @@ public class GCPStorage extends BaseStorage {
      */
     @Override
     public String put(byte[] fileToUpload, String fileName, String uuid) {
-        Blob blob = storage.create(BlobInfo.newBuilder(bucketName, uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
+        final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
         return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
     }
 }
