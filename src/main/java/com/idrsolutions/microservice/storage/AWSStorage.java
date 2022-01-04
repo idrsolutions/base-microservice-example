@@ -21,7 +21,7 @@ public class AWSStorage extends BaseStorage {
     protected final String bucketName;
     protected final String basePath;
 
-    protected AWSStorage(AmazonS3 s3Client, String bucketName, String basePath) {
+    protected AWSStorage(final AmazonS3 s3Client, final String bucketName, final String basePath) {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
         this.basePath = basePath;
@@ -33,7 +33,7 @@ public class AWSStorage extends BaseStorage {
      * @param bucketName The name of the bucket in AWS that the converted files should be uploaded to
      * @param basePath The path inside the bucket that the converted files should end up in
      */
-    public AWSStorage(Regions region, String bucketName, String basePath) {
+    public AWSStorage(final Regions region, final String bucketName, final String basePath) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build();
         this.bucketName = bucketName;
         this.basePath = basePath;
