@@ -1,5 +1,7 @@
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.utils.FileDeletionService;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -21,6 +23,9 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private static final String CALLBACK_COUNT_PROPERTY_NAME = "callbackThreadCount";
     private static final String INPUT_PROPERTY_NAME = "inputPath";
     private static final String OUTPUT_PROPERTY_NAME = "outputPath";
+    private static final String INDIVIDUAL_TTL_PROPERTY_NAME = "individualTTL";
+    private static final String FILE_DELETION_SERVICE_PROPERTY_NAME = "fileDeletionService";
+    private static final String FILE_DELETION_SERVICE_FREQUENCY_PROPERTY_NAME = "fileDeletionService.frequency";
 
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
@@ -63,6 +68,17 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         BaseServlet.setInputPath(propertiesFile.getProperty(INPUT_PROPERTY_NAME));
         BaseServlet.setOutputPath(propertiesFile.getProperty(OUTPUT_PROPERTY_NAME));
+        BaseServlet.setIndividualTTL(Long.parseLong(propertiesFile.getProperty(INDIVIDUAL_TTL_PROPERTY_NAME)));
+
+        if (Boolean.parseBoolean(propertiesFile.getProperty(FILE_DELETION_SERVICE_PROPERTY_NAME))) {
+            servletContext.setAttribute(FILE_DELETION_SERVICE_PROPERTY_NAME, new FileDeletionService(
+                    new String[]{
+                            propertiesFile.getProperty(INPUT_PROPERTY_NAME), propertiesFile.getProperty(OUTPUT_PROPERTY_NAME)
+                    },
+                    Long.parseLong(propertiesFile.getProperty(INDIVIDUAL_TTL_PROPERTY_NAME)),
+                    Long.parseLong(propertiesFile.getProperty(FILE_DELETION_SERVICE_FREQUENCY_PROPERTY_NAME))
+            ));
+        }
     }
 
     @Override
@@ -72,6 +88,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("convertQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
+
+        ((FileDeletionService) servletContext.getAttribute(FILE_DELETION_SERVICE_PROPERTY_NAME)).shutdownNow();
     }
 
 
@@ -81,6 +99,9 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateCallbackThreadCount(propertiesFile);
         validateInputPath(propertiesFile);
         validateOutputPath(propertiesFile);
+        validateIndividualTTL(propertiesFile);
+        validateFileDeletionService(propertiesFile);
+        validateFileDeletionServiceFrequency(propertiesFile);
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
@@ -140,5 +161,36 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
     }
 
+    private void validateIndividualTTL(final Properties properties) {
+        final String rawIndividualTTL = properties.getProperty(INDIVIDUAL_TTL_PROPERTY_NAME);
+        if (rawIndividualTTL == null || rawIndividualTTL.isEmpty() || !rawIndividualTTL.matches("\\d+")) {
+            final String defaultTTL = Long.toString(BaseServlet.getIndividualTTL());
+            properties.setProperty(INDIVIDUAL_TTL_PROPERTY_NAME, defaultTTL);
+            final String message = String.format("Properties value for \"individualTTL\" was set to \"%s\" but should" +
+                    " be a positive long. Using a value of %s.", rawIndividualTTL, defaultTTL);
+            LOG.log(Level.WARNING, message);
+        }
+    }
 
+    private void validateFileDeletionService(final Properties properties) {
+        final String fileDeletionService = properties.getProperty(FILE_DELETION_SERVICE_PROPERTY_NAME);
+        if (fileDeletionService == null || fileDeletionService.isEmpty() || !Boolean.parseBoolean(fileDeletionService)) {
+            properties.setProperty(FILE_DELETION_SERVICE_PROPERTY_NAME, "false");
+            if (!"false".equalsIgnoreCase(fileDeletionService)) {
+                final String message = String.format("Properties value for \"fileDeletionService\" was set to \"%s\" " +
+                        "but should be a boolean. Using a value of false.", fileDeletionService);
+                LOG.log(Level.WARNING, message);
+            }
+        }
+    }
+
+    private void validateFileDeletionServiceFrequency(final Properties properties) {
+        final String fdsFrequency = properties.getProperty(FILE_DELETION_SERVICE_FREQUENCY_PROPERTY_NAME);
+        if (fdsFrequency == null || fdsFrequency.isEmpty() || "0".equals(fdsFrequency) || !fdsFrequency.matches("\\d+")) {
+            properties.setProperty(FILE_DELETION_SERVICE_FREQUENCY_PROPERTY_NAME, "5");
+            final String message = String.format("Properties value for \"fileDeletionService.frequency\" was set to " +
+                    "\"%s\" but should be a positive long. Using a value of 5 Minutes.", fdsFrequency);
+            LOG.log(Level.WARNING, message);
+        }
+    }
 }
