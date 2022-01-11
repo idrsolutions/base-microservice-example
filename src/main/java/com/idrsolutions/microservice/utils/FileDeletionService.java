@@ -31,7 +31,7 @@ public class FileDeletionService {
      * Create an instance of the FileDeletionService
      *
      * @param dirs the root directories that will be scanned for files that should be deleted
-     * @param fileLifeSpan the life span of the files before they should be deleted
+     * @param fileLifeSpan the life span in milliseconds of the files before they should be deleted
      * @param frequency the frequency in minutes that the service will run
      */
     public FileDeletionService(final String[] dirs, final long fileLifeSpan, final long frequency) {
@@ -44,7 +44,7 @@ public class FileDeletionService {
      * This method does not remove any previously set scheduled tasks from the ExecutorService
      *
      * @param dirs the root directories that will be scanned for files that should be deleted
-     * @param fileLifeSpan the life span of the files before they should be deleted
+     * @param fileLifeSpan the life span in milliseconds of the files before they should be deleted
      * @param frequency the frequency in minutes that the service will run
      */
     private void setUpService(final String[] dirs, final long fileLifeSpan, final long frequency) {
