@@ -15,10 +15,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DBHandler {
-    public static final DBHandler INSTANCE = new DBHandler();
     private static final Logger LOG = Logger.getLogger(DBHandler.class.getName());
+    public static final DBHandler INSTANCE = new DBHandler();
 
     final DataSource dataSource;
+    Map<String, Individual> backupMemoryIMap = null;
 
     private DBHandler() {
         dataSource = setupDatasource();
@@ -42,7 +43,11 @@ public class DBHandler {
             return (DataSource) new InitialContext().lookup("jdbc/mydb");
         } catch (NamingException ignored) {}
 
-        throw new IllegalStateException("Failed to find database on JDNI");
+        // throw new IllegalStateException("Failed to find database on JDNI");
+        // TODO: Point towards some instructions for setup
+        LOG.warning("No Datasource setup, falling back to internal memory storage");
+        backupMemoryIMap = new HashMap<>();
+        return null;
     }
 
     /**
@@ -50,6 +55,8 @@ public class DBHandler {
      * @throws SQLException An sql Exception
      */
     private void setupDatabase() throws SQLException {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
                 Statement statement = connection.createStatement()) {
 //            // Clear Tables
@@ -100,6 +107,10 @@ public class DBHandler {
      * @throws SQLException an SQL Exception
      */
     public Individual getIndividual(String id) throws SQLException {
+        if (dataSource == null) {
+            return backupMemoryIMap.get(id);
+        }
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;");
@@ -168,6 +179,11 @@ public class DBHandler {
      * @param individual the individual to insert into the database
      */
     public void putIndividual(Individual individual) {
+        if (dataSource == null) {
+            backupMemoryIMap.put(individual.getUuid(), individual);
+            return;
+        }
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
             individualStatement.setString(1, individual.getUuid());
@@ -192,6 +208,13 @@ public class DBHandler {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     public void cleanOldEntries(long TTL) {
+        if (dataSource == null) {
+            for (String individualId : backupMemoryIMap.keySet()) {
+                if (backupMemoryIMap.get(individualId).getTimestamp() < new Date().getTime() - TTL) backupMemoryIMap.remove(individualId);
+            }
+            return;
+        }
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement("DELETE FROM conversions WHERE theTime < ?")) {
             statement.setFloat(1, new Date().getTime() - TTL);
@@ -202,6 +225,8 @@ public class DBHandler {
     }
 
     public void setIndividualCustomValue(String uuid, String key, String value) {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement("REPLACE INTO customValues VALUES (?, ?, ?) ")) {
             statement.setString(1, uuid);
@@ -214,6 +239,8 @@ public class DBHandler {
     }
 
     public void setIndividualAlive(String uuid, boolean alive) {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
             statement.setBoolean(1, alive);
@@ -225,6 +252,8 @@ public class DBHandler {
     }
 
     public void setIndividualState(String uuid, String state) {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
             statement.setString(1, state);
@@ -236,6 +265,8 @@ public class DBHandler {
     }
 
     public void setIndividualMap(String uuid, String table, Map<String, String> map) {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM " + table + " WHERE uuid = ?");
             PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?, ?)")) {
@@ -256,18 +287,26 @@ public class DBHandler {
     }
 
     public void setIndividualSettings(String uuid, Map<String, String> settings) {
+        if (dataSource == null) return;
+
         setIndividualMap(uuid, "settings", settings);
     }
 
     public void setIndividualCustomValues(String uuid, Map<String, String> customValues) {
+        if (dataSource == null) return;
+
         setIndividualMap(uuid, "customValues", customValues);
     }
 
     public void setIndividualCustomData(String uuid, Map<String, String> customData) {
+        if (dataSource == null) return;
+
         setIndividualMap(uuid, "customData", customData);
     }
 
     public void setIndividualError(String uuid, String state, int errorCode, String errorMessage) {
+        if (dataSource == null) return;
+
         try(Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
             statement.setString(1, state);
