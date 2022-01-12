@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * A simple implementation of {@link IStorage} that just uses the local disk to store files
  */
-public class FileStorage extends BaseStorage {
+public class LocalStorage extends BaseStorage {
     /**
      * @inheritDoc
      */
