@@ -1,6 +1,6 @@
 package com.idrsolutions.microservice.utils;
 
-import com.idrsolutions.microservice.Individual;
+import com.idrsolutions.microservice.db.DBHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,12 +25,11 @@ public class LibreOfficeHelper {
      * Converts an office file to PDF using LibreOffice.
      *
      * @param file The office file to convert to PDF
-     * @param individual The Individual on which to set the error if one occurs
+     * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
      * occurs
      */
-    public static boolean convertToPDF(final File file, final Individual individual) {
-        final String uuid = individual.getUuid();
+    public static boolean convertToPDF(final File file, final String uuid) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final ProcessBuilder pb = new ProcessBuilder("soffice",
@@ -43,12 +42,12 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(1, TimeUnit.MINUTES)) {
                 process.destroy();
-                individual.doError(1050, "Libreoffice timed out after 1 minute");
+                DBHandler.INSTANCE.setError(uuid, 1050, "Libreoffice timed out after 1 minute");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
             LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
-            individual.doError(1070, "Internal error processing file");
+            DBHandler.INSTANCE.setError(uuid, 1070, "Internal error processing file");
             return false;
         } finally {
             FileHelper.deleteFolder(new File(uniqueLOProfile));

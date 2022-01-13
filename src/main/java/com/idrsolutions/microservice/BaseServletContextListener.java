@@ -1,6 +1,7 @@
 package com.idrsolutions.microservice;
 
-import com.idrsolutions.microservice.utils.DBHandler;
+import com.idrsolutions.microservice.db.DBHandler;
+import com.idrsolutions.microservice.db.Database;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -29,7 +30,7 @@ public class BaseServletContextListener implements ServletContextListener {
 
         // Force the DBHandler to start
         @SuppressWarnings("unused")
-        DBHandler instance = DBHandler.INSTANCE;
+        Database instance = DBHandler.INSTANCE;
     }
 
     @Override
