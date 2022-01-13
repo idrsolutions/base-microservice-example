@@ -122,7 +122,7 @@ class MemoryDatabase implements Database {
      * Represents a file conversion request to the server. Allows storage of UUID's
      * for identification of clients which are requesting file conversions.
      */
-    static class Individual {
+    private static final class Individual {
         private final String uuid;
         private boolean isAlive = true;
         private final long timestamp;
