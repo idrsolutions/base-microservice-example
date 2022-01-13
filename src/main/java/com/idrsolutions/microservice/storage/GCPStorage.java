@@ -9,6 +9,7 @@ import com.google.cloud.storage.StorageOptions;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,17 +20,19 @@ public class GCPStorage extends BaseStorage {
 
     private final String projectID;
     private final String bucketName;
+    private final String basePath;
 
     /**
      * Finds the credentials file using the Environment Variable: GOOGLE_APPLICATION_CREDENTIALS
      * @param projectID The project ID Containing the bucket
      * @param bucketName The name of the bucket that the converted files should be uploaded to
      */
-    public GCPStorage(final String projectID, final String bucketName) {
+    public GCPStorage(final String projectID, final String bucketName, String basePath) {
         // Will fetch from the "GOOGLE_APPLICATION_CREDENTIALS" environment variable
         storage = StorageOptions.newBuilder().setProjectId(projectID).build().getService();
         this.projectID = projectID;
         this.bucketName = bucketName;
+        this.basePath = basePath;
     }
 
     /**
@@ -39,7 +42,7 @@ public class GCPStorage extends BaseStorage {
      * @param bucketName The name of the bucket that the converted files should be uploaded to
      * @throws IOException if it cannot find or access the credentialsPath
      */
-    public GCPStorage(final String credentialsPath, final String projectID, final String bucketName) throws IOException {
+    public GCPStorage(final String credentialsPath, final String projectID, final String bucketName, String basePath) throws IOException {
         GoogleCredentials credentials;
 
         try (FileInputStream fileStream = new FileInputStream(credentialsPath)) {
@@ -49,6 +52,17 @@ public class GCPStorage extends BaseStorage {
         storage = StorageOptions.newBuilder().setProjectId(projectID).setCredentials(credentials).build().getService();
         this.projectID = projectID;
         this.bucketName = bucketName;
+        this.basePath = basePath;
+    }
+
+    public GCPStorage(Properties properties) throws IOException {
+        // storageprovider.gcp.credentialspath
+        // storageprovider.gcp.projectid
+        // storageprovider.gcp.bucketname
+        this(properties.getProperty("storageprovider.gcp.credentialspath"),
+                properties.getProperty("storageprovider.gcp.projectid"),
+                properties.getProperty("storageprovider.gcp.bucketname"),
+                properties.getProperty("storageprovider.gcp.basepath"));
     }
 
     /**
@@ -56,7 +70,7 @@ public class GCPStorage extends BaseStorage {
      */
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
-        final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
+        final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, basePath + "/" + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
         return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
     }
 }

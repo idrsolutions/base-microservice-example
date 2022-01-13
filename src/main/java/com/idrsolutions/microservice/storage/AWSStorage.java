@@ -1,6 +1,8 @@
 package com.idrsolutions.microservice.storage;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -11,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Properties;
 
 /**
  * An implementation of {@link IStorage} that uses AWS S3 to store files
@@ -50,6 +53,20 @@ public class AWSStorage extends BaseStorage {
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).withCredentials(credentialsProvider).build();
         this.bucketName = bucketName;
         this.basePath = basePath;
+    }
+
+    public AWSStorage(final Properties properties) {
+        // storageprovider.aws.region
+        // storageprovider.aws.accesskey
+        // storageprovider.aws.secretkey
+        // storageprovider.aws.bucketname
+        // storageprovider.aws.basepath
+
+        this(Regions.fromName(properties.getProperty("storageprovider.aws.region")),
+                new AWSStaticCredentialsProvider(new BasicAWSCredentials(properties.getProperty("storageprovider.aws.accesskey"),
+                        properties.getProperty("storageprovider.aws.secretkey"))),
+                properties.getProperty("storageprovider.aws.bucketname"),
+                properties.getProperty("storageprovider.aws.basepath"));
     }
 
     /**

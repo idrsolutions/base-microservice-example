@@ -20,16 +20,11 @@
  */
 package com.idrsolutions.microservice;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.azure.storage.common.StorageSharedKeyCredential;
 import com.idrsolutions.microservice.storage.*;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.FileHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 import com.idrsolutions.microservice.utils.ZipHelper;
-import com.oracle.bmc.Region;
-import com.oracle.bmc.auth.BasicAuthenticationDetailsProvider;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -42,10 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -84,7 +76,69 @@ public abstract class BaseServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        storage = new FileStorage();
+
+        Properties properties = (Properties) getServletContext().getAttribute("properties");
+        String storageProvider = properties.getProperty("storageprovider");
+
+        try {
+            switch (storageProvider) {
+                case "AWS":
+                    // storageprovider.aws.region
+                    // storageprovider.aws.accesskey
+                    // storageprovider.aws.secretkey
+                    // storageprovider.aws.bucketname
+                    // storageprovider.aws.basepath
+
+                    storage = new AWSStorage(properties);
+                    break;
+
+                case "DigitalOcean":
+                    // storageprovider.do.region
+                    // storageprovider.do.accesskey
+                    // storageprovider.do.secretkey
+                    // storageprovider.do.bucketname
+                    // storageprovider.do.basepath
+
+                    storage = new DigitalOceanStorage(properties);
+                    break;
+
+                case "Azure":
+                    // storageprovider.azure.accountname
+                    // storageprovider.azure.accountkey
+                    // storageprovider.azure.containername
+                    // storageprovider.azure.basepath
+
+                    storage = new AzureStorage(properties);
+                    break;
+
+                case "GCP":
+                    // storageprovider.gcp.credentialspath
+                    // storageprovider.gcp.projectid
+                    // storageprovider.gcp.bucketname
+                    // storageprovider.gcp.basepath
+
+                    storage = new GCPStorage(properties);
+                    break;
+
+                case "Oracle":
+                    // storageprovider.oracle.ociconfigfilepath
+                    // storageprovider.oracle.profile (nullable)
+                    // storageprovider.oracle.namespace
+                    // storageprovider.oracle.bucketname
+                    // storageprovider.oracle.basepath
+
+                    storage = new OracleStorage(properties);
+                    break;
+
+                case "Local":
+                default:
+                    storage = new LocalStorage();
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+
+
     }
 
     /**

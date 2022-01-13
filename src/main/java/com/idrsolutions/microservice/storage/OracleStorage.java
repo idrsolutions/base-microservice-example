@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.Properties;
 
 /**
  * An implementation of {@link IStorage} that uses Oracle Buckets to store files
@@ -26,6 +27,7 @@ public class OracleStorage extends BaseStorage {
 
     private final String namespace;
     private final String bucketName;
+    private final String basePath;
 
     /**
      * Authenticates using the
@@ -36,8 +38,8 @@ public class OracleStorage extends BaseStorage {
      * @param bucketName the name of the bucket that the converted files should be uploaded to
      * @throws IOException if the credentials file is inaccessible
      */
-    public OracleStorage(final Region region, final @Nullable String configFilePath, final @Nullable String profile, final String namespace, final String bucketName) throws IOException {
-        final ConfigFileReader.ConfigFile configFile = configFilePath != null ? ConfigFileReader.parse(configFilePath, profile) : ConfigFileReader.parseDefault(profile);
+    public OracleStorage(final Region region, final String configFilePath, final @Nullable String profile, final String namespace, final String bucketName, final String basePath) throws IOException {
+        final ConfigFileReader.ConfigFile configFile = ConfigFileReader.parse(configFilePath, profile);
 
         final AuthenticationDetailsProvider provider = new ConfigFileAuthenticationDetailsProvider(configFile);
 
@@ -46,6 +48,7 @@ public class OracleStorage extends BaseStorage {
 
         this.namespace = namespace;
         this.bucketName = bucketName;
+        this.basePath = basePath;
     }
 
     /**
@@ -55,12 +58,29 @@ public class OracleStorage extends BaseStorage {
      * @param namespace The namespace of the bucket
      * @param bucketName the name of the bucket that the converted files should be uploaded to
      */
-    public OracleStorage(final Region region, final BasicAuthenticationDetailsProvider auth, final String namespace, final String bucketName) {
+    public OracleStorage(final Region region, final BasicAuthenticationDetailsProvider auth, final String namespace, final String bucketName, final String basePath) {
         client = new ObjectStorageClient(auth);
         client.setRegion(region);
 
         this.namespace = namespace;
         this.bucketName = bucketName;
+        this.basePath = basePath;
+    }
+
+    public OracleStorage(Properties properties) throws IOException {
+        // storageprovider.oracle.region
+        // storageprovider.oracle.ociconfigfilepath
+        // storageprovider.oracle.profile (nullable)
+        // storageprovider.oracle.namespace
+        // storageprovider.oracle.bucketname
+        // storageprovider.oracle.basepath
+
+        this(Region.fromRegionId(properties.getProperty("storageprovider.oracle.region")),
+                properties.getProperty("storageprovider.oracle.ociconfigfilepath"),
+                !properties.getProperty("storageprovider.oracle.profile").trim().isEmpty() ? properties.getProperty("storageprovider.oracle.profile") : null,
+                properties.getProperty("storageprovider.oracle.namespace"),
+                properties.getProperty("storageprovider.oracle.bucketname"),
+                properties.getProperty("storageprovider.oracle.basepath"));
     }
 
     /**
@@ -69,7 +89,7 @@ public class OracleStorage extends BaseStorage {
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)) {
-            final String dest = uuid + "/" + fileName;
+            final String dest = basePath + "/" + uuid + "/" + fileName;
 
             final PutObjectRequest objectRequest = PutObjectRequest.builder()
                     .bucketName(bucketName)
