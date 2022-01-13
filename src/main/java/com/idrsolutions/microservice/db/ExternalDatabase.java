@@ -106,7 +106,7 @@ final class ExternalDatabase implements Database {
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initUuid(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
+    public void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
             individualStatement.setString(1, uuid);
@@ -199,18 +199,15 @@ final class ExternalDatabase implements Database {
         }
     }
 
-    @Override
-    public void setSettings(String uuid, Map<String, String> settings) {
+    private void setSettings(String uuid, Map<String, String> settings) {
         setIndividualMap(uuid, "settings", settings);
     }
 
-    @Override
-    public void setCustomValues(String uuid, Map<String, String> customValues) {
+    private void setCustomValues(String uuid, Map<String, String> customValues) {
         setIndividualMap(uuid, "customValues", customValues);
     }
 
-    @Override
-    public void setCustomData(String uuid, Map<String, String> customData) {
+    private void setCustomData(String uuid, Map<String, String> customData) {
         setIndividualMap(uuid, "customData", customData);
     }
 

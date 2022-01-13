@@ -31,7 +31,7 @@ public interface Database {
      * @param customData Custom data for the conversion
      * @param settings Settings for the conversion
      */
-    void initUuid(final String uuid, final Map<String, String> customData, final Map<String, String> settings);
+    void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings);
 
     /**
      * Removes all individuals in the database who are older than the passed Time to Live
@@ -44,12 +44,6 @@ public interface Database {
     void setAlive(String uuid, boolean alive);
 
     void setState(String uuid, String state);
-
-    void setSettings(String uuid, Map<String, String> settings);
-
-    void setCustomValues(String uuid, Map<String, String> customValues);
-
-    void setCustomData(String uuid, Map<String, String> customData);
 
     void setError(String uuid, int errorCode, String errorMessage);
 

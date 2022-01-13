@@ -21,7 +21,6 @@
 package com.idrsolutions.microservice.db;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,12 +41,8 @@ class MemoryDatabase implements Database {
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initUuid(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
-        final Individual individual = new Individual(uuid);
-        individual.setCustomData(customData);
-        individual.setSettings(settings);
-
-        imap.put(individual.getUuid(), individual);
+    public void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
+        imap.put(uuid, new Individual(uuid, customData, settings));
     }
 
     /**
@@ -73,21 +68,6 @@ class MemoryDatabase implements Database {
     @Override
     public void setState(String uuid, String state) {
         imap.get(uuid).setState(state);
-    }
-
-    @Override
-    public void setSettings(String uuid, Map<String, String> settings) {
-        imap.get(uuid).setSettings(settings);
-    }
-
-    @Override
-    public void setCustomValues(String uuid, Map<String, String> customValues) {
-        imap.get(uuid).setCustomValues(customValues);
-    }
-
-    @Override
-    public void setCustomData(String uuid, Map<String, String> customData) {
-        imap.get(uuid).setCustomData(customData);
     }
 
     @Override
@@ -150,57 +130,27 @@ class MemoryDatabase implements Database {
         private String errorCode;
         private String errorMessage;
 
-        private Map<String, String> settings;
-        private Map<String, String> customValues = new ConcurrentHashMap<>();
-        private Map<String, String> customData;
+        private final Map<String, String> settings;
+        private final Map<String, String> customValues = new ConcurrentHashMap<>();
+        private final Map<String, String> customData;
 
         /**
          * Create individual with a specific UUID.
          *
          * @param uuid the uuid to identify this individual
          */
-        Individual(final String uuid) {
+        Individual(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
             this.uuid = uuid;
             timestamp = new Date().getTime();
             state = "queued";
-        }
 
-        /**
-         * Create an individual, setting all of it's fields
-         * This is intended for use by the database, as this method does not create an entry inside the database
-         *
-         * @param uuid         the uuid to identify this individual
-         * @param isAlive      the alive state of the individual
-         * @param timestamp    the creation timestamp of the individual
-         * @param state        the state of the individual
-         * @param errorCode    the error code of the Individual
-         * @param errorMessage the error message of the Individual
-         * @param settings     the conversion settings
-         * @param customValues the custom values
-         */
-        public Individual(String uuid, boolean isAlive, long timestamp, String state, String errorCode, String errorMessage, HashMap<String, String> settings, Map<String, String> customValues) {
-            this.uuid = uuid;
-            this.isAlive = isAlive;
-            this.timestamp = timestamp;
-            this.state = state;
-            this.errorCode = errorCode;
-            this.errorMessage = errorMessage;
+            this.customData = customData;
             this.settings = settings;
-            this.customValues = customValues;
         }
 
 
         public Map<String, String> getCustomValues() {
             return customValues;
-        }
-
-        /**
-         * Store a HashMap containing custom values
-         *
-         * @param customValues The custom values
-         */
-        private synchronized void setCustomValues(Map<String, String> customValues) {
-            this.customValues = customValues;
         }
 
         /**
@@ -295,30 +245,12 @@ class MemoryDatabase implements Database {
         }
 
         /**
-         * Store the settings used for the conversion
-         *
-         * @param settings the settings to store
-         */
-        private void setSettings(final Map<String, String> settings) {
-            this.settings = settings;
-        }
-
-        /**
          * Get custom data stored in the Individual (null if not set)
          *
          * @return the custom data
          */
         public Map<String, String> getCustomData() {
             return customData;
-        }
-
-        /**
-         * Store custom data in the Individual
-         *
-         * @param customData the custom data to store
-         */
-        public void setCustomData(Map<String, String> customData) {
-            this.customData = customData;
         }
 
         /**
