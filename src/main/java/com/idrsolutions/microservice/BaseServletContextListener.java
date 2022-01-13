@@ -22,7 +22,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private static final String KEY_PROPERTY_DOWNLOAD_COUNT = "downloadThreadCount";
     private static final String KEY_PROPERTY_CALLBACK_COUNT = "callbackThreadCount";
     private static final String KEY_PROPERTY_INPUT_PATH = "inputPath";
-    private static final String KEY_PROPERTY_OUTPUT_PATH = "outputPath";
+    protected static final String KEY_PROPERTY_OUTPUT_PATH = "outputPath";
 
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
