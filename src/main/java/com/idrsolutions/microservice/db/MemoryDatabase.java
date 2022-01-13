@@ -99,7 +99,7 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getState(final String uuid) {
+    public Map<String, String> getStatus(final String uuid) {
         final Individual individual = imap.get(uuid);
 
         final Map<String, String> state = new LinkedHashMap<>();

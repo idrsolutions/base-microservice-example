@@ -230,7 +230,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getState(final String uuid) throws SQLException {
+    public Map<String, String> getStatus(final String uuid) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
              PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {

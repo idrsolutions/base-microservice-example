@@ -53,7 +53,7 @@ public interface Database {
 
     void setError(String uuid, int errorCode, String errorMessage);
 
-    Map<String, String> getState(final String uuid) throws SQLException;
+    Map<String, String> getStatus(final String uuid) throws SQLException;
 
     Map<String, String> getSettings(final String uuid) throws SQLException;
 

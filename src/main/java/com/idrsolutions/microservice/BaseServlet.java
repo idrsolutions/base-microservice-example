@@ -174,22 +174,22 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        final Map<String, String> state;
+        final Map<String, String> status;
         try {
-            state = DBHandler.INSTANCE.getState(uuidStr);
+            status = DBHandler.INSTANCE.getStatus(uuidStr);
         } catch (final SQLException e) {
             LOG.log(Level.SEVERE, "Database error", e);
             doError(request, response, "Database failure", 500);
             return;
         }
 
-        if (state == null) {
+        if (status == null) {
             doError(request, response, "Unknown uuid: " + uuidStr, 404);
             return;
         }
 
         final JsonObjectBuilder json = Json.createObjectBuilder();
-        state.forEach(json::add);
+        status.forEach(json::add);
 
         sendResponse(request, response, json.toString());
     }
@@ -577,21 +577,21 @@ public abstract class BaseServlet extends HttpServlet {
             final String callbackUrl = rawParam[0];
 
             if (!callbackUrl.equals("")) {
-                final Map<String, String> state;
+                final Map<String, String> status;
                 try {
-                    state = DBHandler.INSTANCE.getState(uuid);
+                    status = DBHandler.INSTANCE.getStatus(uuid);
                 } catch (final SQLException e) {
                     LOG.log(Level.SEVERE, "Database error", e);
                     return;
                 }
 
-                if (state == null) {
+                if (status == null) {
                     LOG.log(Level.SEVERE, "Callback failed. UUID was not in database.");
                     return;
                 }
 
                 final JsonObjectBuilder json = Json.createObjectBuilder();
-                state.forEach(json::add);
+                status.forEach(json::add);
 
                 final ScheduledExecutorService callbackQueue = (ScheduledExecutorService) getServletContext().getAttribute("callbackQueue");
                 callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, json.build().toString(), callbackQueue, 1));
