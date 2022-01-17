@@ -191,7 +191,7 @@ public abstract class BaseServlet extends HttpServlet {
         final JsonObjectBuilder json = Json.createObjectBuilder();
         status.forEach(json::add);
 
-        sendResponse(request, response, json.toString());
+        sendResponse(request, response, json.build().toString());
     }
 
     /**
