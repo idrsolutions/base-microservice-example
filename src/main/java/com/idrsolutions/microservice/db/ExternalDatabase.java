@@ -91,7 +91,7 @@ final class ExternalDatabase implements Database {
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customData (" +
                     "uuid VARCHAR(36), " +
                     "key VARCHAR(70), " +
-                    "vayolue TEXT, " +
+                    "value TEXT, " +
                     "PRIMARY KEY (uuid, key), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
