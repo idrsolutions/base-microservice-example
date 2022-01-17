@@ -51,7 +51,7 @@ class MemoryDatabase implements Database {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     @Override
-    public void cleanOldEntries(long TTL) {
+    public void cleanOldEntries(final long TTL) {
         imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - TTL);
     }
 
@@ -61,17 +61,17 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public void setAlive(String uuid, boolean alive) {
+    public void setAlive(final String uuid, final boolean alive) {
         imap.get(uuid).setAlive(alive);
     }
 
     @Override
-    public void setState(String uuid, String state) {
+    public void setState(final String uuid, final String state) {
         imap.get(uuid).setState(state);
     }
 
     @Override
-    public void setError(String uuid, int errorCode, String errorMessage) {
+    public void setError(final String uuid, final int errorCode, final String errorMessage) {
         final Individual individual = imap.get(uuid);
         individual.state = "error";
         individual.errorCode = String.valueOf(errorCode);
@@ -97,7 +97,7 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getSettings(String uuid) {
+    public Map<String, String> getSettings(final String uuid) {
         final Individual individual = imap.get(uuid);
 
         if (individual == null) {
@@ -108,7 +108,7 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getCustomData(String uuid) {
+    public Map<String, String> getCustomData(final String uuid) {
         final Individual individual = imap.get(uuid);
 
         if (individual == null) {

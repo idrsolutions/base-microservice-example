@@ -37,15 +37,15 @@ public interface Database {
      * Removes all individuals in the database who are older than the passed Time to Live
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
-    void cleanOldEntries(long TTL);
+    void cleanOldEntries(final long TTL);
 
-    void setCustomValue(String uuid, String key, String value);
+    void setCustomValue(final String uuid, final String key, final String value);
 
-    void setAlive(String uuid, boolean alive);
+    void setAlive(final String uuid, final boolean alive);
 
-    void setState(String uuid, String state);
+    void setState(final String uuid, final String state);
 
-    void setError(String uuid, int errorCode, String errorMessage);
+    void setError(final String uuid, final int errorCode, final String errorMessage);
 
     Map<String, String> getStatus(final String uuid) throws SQLException;
 

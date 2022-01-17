@@ -132,7 +132,7 @@ final class ExternalDatabase implements Database {
      * @param TTL the maximum amount of time an individual is allowed to remain in the database
      */
     @Override
-    public void cleanOldEntries(long TTL) {
+    public void cleanOldEntries(final long TTL) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("DELETE FROM conversions WHERE theTime < ?")) {
             statement.setFloat(1, new Date().getTime() - TTL);
@@ -143,7 +143,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public void setCustomValue(String uuid, String key, String value) {
+    public void setCustomValue(final String uuid, final String key, final String value) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("REPLACE INTO customValues VALUES (?, ?, ?) ")) {
             statement.setString(1, uuid);
@@ -156,7 +156,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public void setAlive(String uuid, boolean alive) {
+    public void setAlive(final String uuid, final boolean alive) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("Update conversions SET isAlive = ? WHERE uuid = ?")) {
             statement.setBoolean(1, alive);
@@ -168,7 +168,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public void setState(String uuid, String state) {
+    public void setState(final String uuid, final String state) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("Update conversions SET state = ? WHERE uuid = ?")) {
             statement.setString(1, state);
@@ -179,7 +179,7 @@ final class ExternalDatabase implements Database {
         }
     }
 
-    private void setIndividualMap(String uuid, String table, Map<String, String> map) {
+    private void setIndividualMap(final String uuid, final String table, final Map<String, String> map) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM " + table + " WHERE uuid = ?");
              PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?, ?)")) {
@@ -199,20 +199,20 @@ final class ExternalDatabase implements Database {
         }
     }
 
-    private void setSettings(String uuid, Map<String, String> settings) {
+    private void setSettings(final String uuid, final Map<String, String> settings) {
         setIndividualMap(uuid, "settings", settings);
     }
 
-    private void setCustomValues(String uuid, Map<String, String> customValues) {
+    private void setCustomValues(final String uuid, final Map<String, String> customValues) {
         setIndividualMap(uuid, "customValues", customValues);
     }
 
-    private void setCustomData(String uuid, Map<String, String> customData) {
+    private void setCustomData(final String uuid, final Map<String, String> customData) {
         setIndividualMap(uuid, "customData", customData);
     }
 
     @Override
-    public void setError(String uuid, int errorCode, String errorMessage) {
+    public void setError(final String uuid, final int errorCode, final String errorMessage) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE conversions SET state = ?, errorCode = ?, errorMessage = ? WHERE UUID = ?")) {
             statement.setString(1, "error");
@@ -260,7 +260,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getSettings(String uuid) throws SQLException {
+    public Map<String, String> getSettings(final String uuid) throws SQLException {
         try(Connection connection = dataSource.getConnection();
             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;")) {
 
@@ -279,7 +279,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public Map<String, String> getCustomData(String uuid) throws SQLException {
+    public Map<String, String> getCustomData(final String uuid) throws SQLException {
         try(Connection connection = dataSource.getConnection();
             PreparedStatement customDataStatement = connection.prepareStatement("SELECT key, value FROM customData WHERE uuid = ?;")) {
 
