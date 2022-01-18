@@ -82,6 +82,10 @@ class MemoryDatabase implements Database {
     public Map<String, String> getStatus(final String uuid) {
         final Individual individual = imap.get(uuid);
 
+        if (individual == null) {
+            return null;
+        }
+
         final Map<String, String> state = new LinkedHashMap<>();
         state.put("state", individual.state);
 
