@@ -384,7 +384,10 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File outputDir = createOutputDirectory(uuid);
 
-        DBHandler.INSTANCE.initializeConversion(uuid, customData, settings);
+        final String[] rawParam = params.get("callbackUrl");
+        final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
+
+        DBHandler.INSTANCE.initializeConversion(uuid, callbackUrl, customData, settings);
 
         addToQueue(uuid, params, inputFile, outputDir, getContextURL(request));
 
@@ -453,7 +456,10 @@ public abstract class BaseServlet extends HttpServlet {
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
 
-        DBHandler.INSTANCE.initializeConversion(uuid, customData, settings);
+        final String[] rawParam = params.get("callbackUrl");
+        final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
+
+        DBHandler.INSTANCE.initializeConversion(uuid, callbackUrl, customData, settings);
 
         downloadQueue.submit(() -> {
             File inputFile = null;
@@ -491,7 +497,7 @@ public abstract class BaseServlet extends HttpServlet {
             try {
                 convert(uuid, params, inputFile, outputDir, contextUrl);
             } finally {
-                handleCallback(uuid, params);
+                handleCallback(uuid);
                 DBHandler.INSTANCE.setAlive(uuid, false);
             }
         });
@@ -568,22 +574,15 @@ public abstract class BaseServlet extends HttpServlet {
      * will queue the callback into the callbackQueue.
      *
      * @param uuid the uuid of the conversion to send to the callback URL
-     * @param params the request parameters
      */
-    private void handleCallback(final String uuid, final Map<String, String[]> params) {
-        final String[] rawParam = params.get("callbackUrl");
-
-        if (rawParam != null && rawParam.length > 0) {
-            final String callbackUrl = rawParam[0];
+    private void handleCallback(final String uuid) {
+        final String callbackUrl;
+        try {
+            callbackUrl = DBHandler.INSTANCE.getCallbackUrl(uuid);
 
             if (!callbackUrl.equals("")) {
                 final Map<String, String> status;
-                try {
-                    status = DBHandler.INSTANCE.getStatus(uuid);
-                } catch (final SQLException e) {
-                    LOG.log(Level.SEVERE, "Database error", e);
-                    return;
-                }
+                status = DBHandler.INSTANCE.getStatus(uuid);
 
                 if (status == null) {
                     LOG.log(Level.SEVERE, "Callback failed. UUID was not in database.");
@@ -596,6 +595,8 @@ public abstract class BaseServlet extends HttpServlet {
                 final ScheduledExecutorService callbackQueue = (ScheduledExecutorService) getServletContext().getAttribute("callbackQueue");
                 callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, json.build().toString(), callbackQueue, 1));
             }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Database error while handling callback", e);
         }
     }
 

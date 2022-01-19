@@ -21,6 +21,7 @@
 package com.idrsolutions.microservice.db;
 
 import javax.sql.DataSource;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,8 +67,9 @@ final class ExternalDatabase implements Database {
             // Create Tables
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS conversions (" +
                     "uuid VARCHAR(36), " +
+                    "callbackUrl TEXT, " +
                     "isAlive BOOLEAN, " +
-                    "theTime UNSIGNED BIGINT(255), " +
+                    "theTime UNSIGNED BIGINT(20), " +
                     "state VARCHAR(10), " +
                     "errorCode VARCHAR(5), " +
                     "errorMessage VARCHAR(255), " +
@@ -100,21 +102,22 @@ final class ExternalDatabase implements Database {
 
     /**
      * Initialises the conversion in the database
-     *
-     * @param uuid       The uuid of the conversion
+     *  @param uuid       The uuid of the conversion
+     * @param callbackUrl
      * @param customData Custom data for the conversion
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
+    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?)")) {
+             PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, callbackUrl, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             individualStatement.setString(1, uuid);
-            individualStatement.setBoolean(2, true);
-            individualStatement.setLong(3, new Date().getTime());
-            individualStatement.setString(4, "queued");
-            individualStatement.setString(5, null);
+            individualStatement.setString(2, callbackUrl);
+            individualStatement.setBoolean(3, true);
+            individualStatement.setLong(4, new Date().getTime());
+            individualStatement.setString(5, "queued");
             individualStatement.setString(6, null);
+            individualStatement.setString(7, null);
 
             individualStatement.executeUpdate();
         } catch (final SQLException e) {
@@ -256,6 +259,21 @@ final class ExternalDatabase implements Database {
             }
 
             return state;
+        }
+    }
+
+    @Override
+    public String getCallbackUrl(String uuid) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement callbackStatement = connection.prepareStatement("SELECT callbackUrl FROM conversions WHERE uuid = ?;")) {
+            callbackStatement.setString(1, uuid);
+            ResultSet callbackResultSet = callbackStatement.executeQuery();
+
+            if (!callbackResultSet.next()) {
+                return null;
+            }
+
+            return callbackResultSet.getString("callbackUrl");
         }
     }
 

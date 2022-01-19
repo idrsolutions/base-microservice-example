@@ -20,6 +20,7 @@
  */
 package com.idrsolutions.microservice.db;
 
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,14 +36,14 @@ class MemoryDatabase implements Database {
 
     /**
      * Initialises the conversion in the database
-     *
-     * @param uuid       The uuid of the conversion
+     *  @param uuid       The uuid of the conversion
+     * @param callbackUrl
      * @param customData Custom data for the conversion
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
-        imap.put(uuid, new Individual(uuid, customData, settings));
+    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
+        imap.put(uuid, new Individual(uuid, callbackUrl, customData, settings));
     }
 
     /**
@@ -101,6 +102,17 @@ class MemoryDatabase implements Database {
     }
 
     @Override
+    public String getCallbackUrl(String uuid) {
+        final Individual individual = imap.get(uuid);
+
+        if (individual == null) {
+            return null;
+        }
+
+        return individual.getCallbackUrl();
+    }
+
+    @Override
     public Map<String, String> getSettings(final String uuid) {
         final Individual individual = imap.get(uuid);
 
@@ -128,6 +140,7 @@ class MemoryDatabase implements Database {
      */
     private static final class Individual {
         private final String uuid;
+        private String callbackUrl;
         private boolean isAlive = true;
         private final long timestamp;
         private String state;
@@ -143,8 +156,9 @@ class MemoryDatabase implements Database {
          *
          * @param uuid the uuid to identify this individual
          */
-        Individual(final String uuid, final Map<String, String> customData, final Map<String, String> settings) {
+        Individual(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
             this.uuid = uuid;
+            this.callbackUrl = callbackUrl;
             timestamp = new Date().getTime();
             state = "queued";
 
@@ -175,6 +189,14 @@ class MemoryDatabase implements Database {
          */
         private String getUuid() {
             return uuid;
+        }
+
+        public String getCallbackUrl() {
+            return callbackUrl;
+        }
+
+        public void setCallbackUrl(String callbackUrl) {
+            this.callbackUrl = callbackUrl;
         }
 
         /**

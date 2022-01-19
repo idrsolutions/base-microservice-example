@@ -28,10 +28,11 @@ public interface Database {
     /**
      * Initialises the conversion in the database
      * @param uuid The uuid of the conversion
+     * @param callbackUrl
      * @param customData Custom data for the conversion
      * @param settings Settings for the conversion
      */
-    void initializeConversion(final String uuid, final Map<String, String> customData, final Map<String, String> settings);
+    void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings);
 
     /**
      * Removes all individuals in the database who are older than the passed Time to Live
@@ -48,6 +49,8 @@ public interface Database {
     void setError(final String uuid, final int errorCode, final String errorMessage);
 
     Map<String, String> getStatus(final String uuid) throws SQLException;
+
+    String getCallbackUrl(final String uuid) throws SQLException;
 
     Map<String, String> getSettings(final String uuid) throws SQLException;
 
