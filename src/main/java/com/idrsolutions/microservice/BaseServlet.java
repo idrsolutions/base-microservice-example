@@ -36,6 +36,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -152,7 +154,8 @@ public abstract class BaseServlet extends HttpServlet {
     private static void sendResponse(final HttpServletRequest request, final HttpServletResponse response, final String content) {
         allowCrossOrigin(request, response);
         response.setContentType("application/json");
-        try(PrintWriter out = response.getWriter()) {
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        try (final PrintWriter out = response.getWriter()) {
             out.println(content);
         } catch (final IOException e) {
             LOG.log(Level.SEVERE, "IOException thrown when sending json response", e);
@@ -209,19 +212,32 @@ public abstract class BaseServlet extends HttpServlet {
 
     /**
      * Allow cross origin requests according to the CORS standard.
+     * This method will not override any existing headers that are already set in the response.
      *
+     * @param request the request from the client
      * @param response the response object to the request from the client
      */
     private static void allowCrossOrigin(final HttpServletRequest request, final HttpServletResponse response) {
-        String origin = request.getHeader("origin");
-        if (origin == null) {
-            origin = "*";
+        final String credentials = response.getHeader("Access-Control-Allow-Credentials");
+        if (credentials == null) {
+            response.addHeader("Access-Control-Allow-Credentials", "true");
         }
-
-        response.addHeader("Access-Control-Allow-Credentials", "true");
-        response.addHeader("Access-Control-Allow-Origin", origin);
-        response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
-        response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin, authorization");
+        final String origin = response.getHeader("Access-Control-Allow-Origin");
+        if (origin == null) {
+            String requestOrigin = request.getHeader("origin");
+            if (requestOrigin == null) {
+                requestOrigin = "*";
+            }
+            response.addHeader("Access-Control-Allow-Origin", requestOrigin);
+        }
+        final String methods = response.getHeader("Access-Control-Allow-Methods");
+        if (methods == null) {
+            response.addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS, DELETE");
+        }
+        final String headers = response.getHeader("Access-Control-Allow-Headers");
+        if (headers == null) {
+            response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Access-Control-Allow-Origin, authorization");
+        }
     }
 
     /**
@@ -273,20 +289,22 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Sanitize the file name by removing all none url/filepath friendly
-     * characters.
+     * Sanitize the file name by removing all non filepath friendly characters.
+     *
+     * Allow only characters valid across all (most) platforms.
+     * Note that this does not cover all reserved filenames on Windows (E.g. CON, COM1, LTP1, etc), therefore it
+     * remains possible for a user to pass a file that cannot be stored if the server is running on Windows.
+     *
+     * The space character is also currently replaced with an underscore because file names that consist only of
+     * spaces and file paths that end with spaces are not allowed on Windows.
+     *
+     * More info: https://stackoverflow.com/a/31976060
      *
      * @param fileName the filename to sanitize
      * @return the sanitized filename
      */
     private static String sanitizeFileName(final String fileName) {
-        final int extPos = fileName.lastIndexOf('.');
-
-        // Limit filenames to chars allowed in unencoded URLs and Windows filenames for now
-        final String fileNameWithoutExt = fileName.substring(0, extPos).replaceAll("[^$\\-_.+!'(),a-zA-Z0-9]", "_");
-        final String ext = fileName.substring(extPos + 1);
-
-        return fileNameWithoutExt + '.' + ext;
+        return fileName.replaceAll("[\\\\/:\"*?<>| \\p{Cc}]", "_");
     }
 
     /**
@@ -559,14 +577,73 @@ public abstract class BaseServlet extends HttpServlet {
      * @param part the file part from the HTTP request
      * @return the file name or null if it does not exist
      */
-    private String getFileName(final Part part) {
-        for (String content : part.getHeader("content-disposition").split(";")) {
-            if (content.trim().startsWith("filename")) {
-                return content.substring(
-                        content.indexOf('=') + 1).trim().replace("\"", "");
-            }
+    private static String getFileName(final Part part) {
+        // Note that the rules for values allowed inside the content-disposition is fuzzy because the rules in the HTML
+        // spec do not match those in RFCs, so browsers may do something different to other HTTP clients.
+        //
+        // Certain characters may be percent-encoded 0x0A (LF), 0x0D (CR), 0x22 ("). However it is not possible to
+        // differentiate them from occurrences of %0A, %0D & %22 because % itself does not get percent-encoded, so a
+        // filename of %22" appears as filename="%22%22".
+        // See https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
+        //
+        // The rules for the encoding of HTTP headers is not the same as the rules for the encoding of the
+        // content-disposition header's filename value in multipart/form-data requests. Most sources say that header
+        // values may only contain ISO-8859-1, but this does not apply to the filename value in this case.
+        //
+        // The following wording from RFC 2183 is obsolete and should be ignored:
+        // "Current [RFC 2045] grammar restricts parameter values (and hence Content-Disposition filenames) to
+        // US-ASCII." - https://datatracker.ietf.org/doc/html/rfc2183#section-2.3
+        //
+        // multipart/form-data requests send their payload (which includes the content-disposition header) in the body
+        // of the POST request. It is not a typical HTTP header.
+        //
+        // RFC 5987 and RFC 6266 provides a method to specify the charset of header values (using filename*="value"),
+        // however this is explicitly disallowed by RFC 7578.
+        // "NOTE: The encoding method described in [RFC5987], which would add a "filename*" parameter to the
+        // Content-Disposition header field, MUST NOT be used." - https://datatracker.ietf.org/doc/html/rfc7578#section-4.2
+        //
+        // Note also that RFC 6266 applies to response headers only - not multipart/form-data headers in POST requests.
+        //
+        // "Some commonly deployed systems use multipart/form-data with file names directly encoded including octets
+        // outside the US-ASCII range. The encoding used for the file names is typically UTF-8, although HTML forms will
+        // use the charset associated with the form." - https://datatracker.ietf.org/doc/html/rfc7578#section-4.2
+        //
+        // Thus we should treat the value of the filename as UTF-8. Whilst researching, I observed that it is typical to
+        // pass the filename separately to the content-disposition header (e.g. as JSON) in order to store the value correctly.
+
+        final String contentDisposition = part.getHeader("content-disposition");
+        if (contentDisposition.isEmpty()) {
+            return null;
         }
-        return null;
+
+        int startIndex = contentDisposition.indexOf("filename=");
+        if (startIndex == -1) {
+            return null;
+        }
+        startIndex += 9; // 9 = length of "filename="
+
+        int index = startIndex;
+        boolean isQuoted = false;
+        boolean isEscaped = false;
+        while (index < contentDisposition.length()) {
+            char ch = contentDisposition.charAt(index);
+            if (ch == ';') {
+                if (!isQuoted) {
+                    break;
+                }
+            } else if (!isEscaped && ch == '"') {
+                isQuoted = !isQuoted;
+            }
+            isEscaped = !isEscaped && ch == '\\';
+            index++;
+        }
+
+        if (contentDisposition.charAt(startIndex) == '"' && contentDisposition.charAt(index - 1) == '"') {
+            startIndex++;
+            index--;
+        }
+
+        return new String(contentDisposition.substring(startIndex, index).getBytes(), StandardCharsets.UTF_8);
     }
 
     /**

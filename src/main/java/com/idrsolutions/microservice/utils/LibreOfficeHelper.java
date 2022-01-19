@@ -22,17 +22,18 @@ public class LibreOfficeHelper {
     }
 
     /**
-     * Converts an office file to PDF using LibreOffice.
+     * Converts an office file to PDF using the specified LibreOffice executable.
      *
+     * @param sofficePath The path to the soffice executable
      * @param file The office file to convert to PDF
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
      * occurs
      */
-    public static boolean convertToPDF(final File file, final String uuid) {
+    public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
-        final ProcessBuilder pb = new ProcessBuilder("soffice",
+        final ProcessBuilder pb = new ProcessBuilder(sofficePath,
                 "-env:UserInstallation=file://" + uniqueLOProfile,
                 "--headless", "--convert-to", "pdf", file.getName());
 
