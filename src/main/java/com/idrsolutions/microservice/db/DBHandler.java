@@ -27,27 +27,37 @@ import java.util.logging.Logger;
 
 public abstract class DBHandler {
     private static final Logger LOG = Logger.getLogger(DBHandler.class.getName());
-    public static final Database INSTANCE;
+    public static Database INSTANCE = null;
 
-    static {
+    private static String databaseJNDIName;
+
+    public static void initialise() {
         final DataSource dataSource = setupDatasource();
         INSTANCE = dataSource != null ? new ExternalDatabase(dataSource) : new MemoryDatabase();
     }
 
     private static DataSource setupDatasource() {
-        try {
-            // Attempt to grab from tomcat/jetty
-            return (DataSource) new InitialContext().lookup("java:comp/env/jdbc/mydb");
-        } catch (NamingException ignored) {}
+        if (databaseJNDIName != null) {
+            try {
+                // Attempt to grab from tomcat
+                return (DataSource) new InitialContext().lookup("java:comp/env/" + databaseJNDIName);
+            } catch (NamingException ignored) {}
 
-        try {
-            // Attempt to grab from Payara/Glassfish
-            return (DataSource) new InitialContext().lookup("jdbc/mydb");
-        } catch (NamingException ignored) {}
+            try {
+                // Attempt to grab from Payara/Glassfish/jetty
+                return (DataSource) new InitialContext().lookup(databaseJNDIName);
+            } catch (NamingException ignored) {}
 
-        // TODO: Point towards some instructions for setup
-        LOG.warning("No Datasource setup, falling back to internal memory storage");
+            LOG.warning(String.format("Failed to find Datasource with JNDI %s, falling back to internal memory storage", databaseJNDIName));
+        } else {
+            // TODO: Point towards some instructions for setup
+            LOG.info("No Datasource specified, falling back to internal memory storage");
+        }
+
         return null;
     }
 
+    public static void setDatabaseJNDIName(String databaseJNDIName) {
+        DBHandler.databaseJNDIName = databaseJNDIName;
+    }
 }

@@ -27,6 +27,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private static final String KEY_PROPERTY_INPUT_PATH = "inputPath";
     protected static final String KEY_PROPERTY_OUTPUT_PATH = "outputPath";
 
+    private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
+
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
     public abstract String getConfigPath();
@@ -69,9 +71,9 @@ public abstract class BaseServletContextListener implements ServletContextListen
         BaseServlet.setInputPath(propertiesFile.getProperty(KEY_PROPERTY_INPUT_PATH));
         BaseServlet.setOutputPath(propertiesFile.getProperty(KEY_PROPERTY_OUTPUT_PATH));
 
-        // Force the DBHandler to start
-        @SuppressWarnings("unused")
-        Database instance = DBHandler.INSTANCE;
+        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
+
+        DBHandler.initialise();
     }
 
     @Override
@@ -148,6 +150,4 @@ public abstract class BaseServletContextListener implements ServletContextListen
             properties.setProperty(KEY_PROPERTY_OUTPUT_PATH, System.getProperty("user.home") + outputPath.substring(1));
         }
     }
-
-
 }
