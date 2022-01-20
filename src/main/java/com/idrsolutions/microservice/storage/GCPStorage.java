@@ -8,6 +8,7 @@ import com.google.cloud.storage.StorageOptions;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -72,5 +73,16 @@ public class GCPStorage extends BaseStorage {
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, basePath + "/" + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
         return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
+    }
+
+    @Override
+    public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
+        try {
+            final Blob blob = storage.createFrom(BlobInfo.newBuilder(bucketName, basePath + "/" + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobWriteOption.detectContentType());
+            return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -89,38 +89,43 @@ public class OracleStorage extends BaseStorage {
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)) {
-            final String dest = basePath + "/" + uuid + "/" + fileName;
-
-            final PutObjectRequest objectRequest = PutObjectRequest.builder()
-                    .bucketName(bucketName)
-                    .namespaceName(namespace)
-                    .objectName(dest)
-                    .contentLength((long) fileToUpload.length)
-                    .putObjectBody(fileStream)
-                    .build();
-
-            client.putObject(objectRequest);
-
-            final CreatePreauthenticatedRequestDetails preauthenticatedDetails = CreatePreauthenticatedRequestDetails.builder()
-                    .name("Converted PDF " + dest + " Download")
-                    .objectName(dest)
-                    .accessType(CreatePreauthenticatedRequestDetails.AccessType.ObjectRead)
-                    .timeExpires(new Date(System.currentTimeMillis() + 60 * 30 * 1000))
-                    .bucketListingAction(PreauthenticatedRequest.BucketListingAction.Deny)
-                    .build();
-
-            final CreatePreauthenticatedRequestRequest preauthenticatedRequest = CreatePreauthenticatedRequestRequest.builder()
-                    .bucketName(bucketName)
-                    .namespaceName(namespace)
-                    .createPreauthenticatedRequestDetails(preauthenticatedDetails)
-                    .build();
-
-            final CreatePreauthenticatedRequestResponse response = client.createPreauthenticatedRequest(preauthenticatedRequest);
-
-            return client.getEndpoint() + response.getPreauthenticatedRequest().getAccessUri();
+            return put(fileStream, fileToUpload.length, fileName, uuid);
         } catch (IOException e) {
             LOG.severe(e.getMessage());
         }
         return null;
+    }
+
+    @Override
+    public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
+        final String dest = basePath + "/" + uuid + "/" + fileName;
+
+        final PutObjectRequest objectRequest = PutObjectRequest.builder()
+                .bucketName(bucketName)
+                .namespaceName(namespace)
+                .objectName(dest)
+                .contentLength(fileSize)
+                .putObjectBody(fileToUpload)
+                .build();
+
+        client.putObject(objectRequest);
+
+        final CreatePreauthenticatedRequestDetails preauthenticatedDetails = CreatePreauthenticatedRequestDetails.builder()
+                .name("Converted PDF " + dest + " Download")
+                .objectName(dest)
+                .accessType(CreatePreauthenticatedRequestDetails.AccessType.ObjectRead)
+                .timeExpires(new Date(System.currentTimeMillis() + 60 * 30 * 1000))
+                .bucketListingAction(PreauthenticatedRequest.BucketListingAction.Deny)
+                .build();
+
+        final CreatePreauthenticatedRequestRequest preauthenticatedRequest = CreatePreauthenticatedRequestRequest.builder()
+                .bucketName(bucketName)
+                .namespaceName(namespace)
+                .createPreauthenticatedRequestDetails(preauthenticatedDetails)
+                .build();
+
+        final CreatePreauthenticatedRequestResponse response = client.createPreauthenticatedRequest(preauthenticatedRequest);
+
+        return client.getEndpoint() + response.getPreauthenticatedRequest().getAccessUri();
     }
 }

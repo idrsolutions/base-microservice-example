@@ -1,7 +1,9 @@
 package com.idrsolutions.microservice.storage;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.logging.Logger;
 
@@ -16,8 +18,8 @@ public abstract class BaseStorage implements IStorage {
      */
     @Override
     public String put(final File fileToUpload, final String fileName, final String uuid) {
-        try {
-            return put(Files.readAllBytes(fileToUpload.toPath()), fileName, uuid);
+        try (FileInputStream fileStream = new FileInputStream(fileToUpload)) {
+            return put(fileStream, fileToUpload.length(), fileName, uuid);
         } catch (IOException e) {
             LOG.severe(e.getMessage());
             return null;

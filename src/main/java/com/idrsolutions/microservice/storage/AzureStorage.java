@@ -88,6 +88,16 @@ public class AzureStorage extends BaseStorage {
      */
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
+        try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
+            return put(fileStream, fileToUpload.length, fileName, uuid);
+        } catch (IOException e) {
+            LOG.severe(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
         BlobContainerClient containerClient;
         try {
             containerClient = client.createBlobContainer(containerName);
@@ -104,12 +114,7 @@ public class AzureStorage extends BaseStorage {
 
         final BlockBlobClient blobClient = containerClient.getBlobClient(dest).getBlockBlobClient();
 
-        try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
-            blobClient.upload(fileStream, fileToUpload.length);
-        } catch (IOException e) {
-            LOG.severe(e.getMessage());
-            return null;
-        }
+        blobClient.upload(fileToUpload, fileSize);
 
         // Set the filename using the content disposition HTTP Header to avoid the downloaded file also containing the UUID
         blobClient.setHttpHeaders(new BlobHttpHeaders().setContentDisposition("attachment; filename=" + fileName));

@@ -75,19 +75,24 @@ public class AWSStorage extends BaseStorage {
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
         try (InputStream fileStream = new ByteArrayInputStream(fileToUpload)){
-            final ObjectMetadata metadata = new ObjectMetadata();
-            // Assume zip file
-            metadata.setContentType("application/zip");
-            s3Client.putObject(bucketName, basePath + uuid + "/" + fileName, fileStream, metadata);
-
-            long expTimeMillis = Instant.now().toEpochMilli();
-            expTimeMillis += 1000 * 60 * 30;    // 30 Minutes
-            final Date expiration = new Date(expTimeMillis);
-
-            return s3Client.generatePresignedUrl(bucketName, basePath + uuid + "/" + fileName, expiration).toString();
+            return put(fileStream, fileToUpload.length, fileName, uuid);
         } catch (IOException e) {
             LOG.severe(e.getMessage());
         }
         return null;
+    }
+
+    @Override
+    public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
+        final ObjectMetadata metadata = new ObjectMetadata();
+        // Assume zip file
+        metadata.setContentType("application/zip");
+        s3Client.putObject(bucketName, basePath + uuid + "/" + fileName, fileToUpload, metadata);
+
+        long expTimeMillis = Instant.now().toEpochMilli();
+        expTimeMillis += 1000 * 60 * 30;    // 30 Minutes
+        final Date expiration = new Date(expTimeMillis);
+
+        return s3Client.generatePresignedUrl(bucketName, basePath + uuid + "/" + fileName, expiration).toString();
     }
 }

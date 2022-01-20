@@ -1,6 +1,7 @@
 package com.idrsolutions.microservice.storage;
 
 import java.io.File;
+import java.io.InputStream;
 
 public interface IStorage {
     /**
@@ -20,4 +21,6 @@ public interface IStorage {
      * @return A URI to access the uploaded file, or null if the upload was unsuccessful
      */
     String put(final File fileToUpload, final String fileName, final String uuid);
+
+    String put(final InputStream fileToUpload, long fileSize, final String fileName, final String uuid);
 }
