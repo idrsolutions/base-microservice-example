@@ -37,7 +37,7 @@ public abstract class DBHandler {
     }
 
     private static DataSource setupDatasource() {
-        if (databaseJNDIName != null) {
+        if (databaseJNDIName != null && !databaseJNDIName.isEmpty()) {
             try {
                 // Attempt to grab from tomcat
                 return (DataSource) new InitialContext().lookup("java:comp/env/" + databaseJNDIName);
