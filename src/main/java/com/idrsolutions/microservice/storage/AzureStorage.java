@@ -80,7 +80,7 @@ public class AzureStorage extends BaseStorage {
                         properties.getProperty("storageprovider.azure.accountkey")),
                 properties.getProperty("storageprovider.azure.accountname"),
                 properties.getProperty("storageprovider.azure.containername"),
-                properties.getProperty("storageprovider.azure.basepath"));
+                properties.getProperty("storageprovider.azure.basepath", ""));
     }
 
     /**
@@ -110,7 +110,9 @@ public class AzureStorage extends BaseStorage {
             containerClient = client.getBlobContainerClient(containerName);
         }
 
-        final String dest = basePath + "/" + uuid + "/" + fileName;
+
+        String basePath = !this.basePath.isEmpty() ? this.basePath + "/" : "";
+        final String dest = basePath + uuid + "/" + fileName;
 
         final BlockBlobClient blobClient = containerClient.getBlobClient(dest).getBlockBlobClient();
 

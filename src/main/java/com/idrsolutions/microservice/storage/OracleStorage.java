@@ -80,7 +80,7 @@ public class OracleStorage extends BaseStorage {
                 !properties.getProperty("storageprovider.oracle.profile").trim().isEmpty() ? properties.getProperty("storageprovider.oracle.profile") : null,
                 properties.getProperty("storageprovider.oracle.namespace"),
                 properties.getProperty("storageprovider.oracle.bucketname"),
-                properties.getProperty("storageprovider.oracle.basepath"));
+                properties.getProperty("storageprovider.oracle.basepath", ""));
     }
 
     /**
@@ -98,7 +98,8 @@ public class OracleStorage extends BaseStorage {
 
     @Override
     public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
-        final String dest = basePath + "/" + uuid + "/" + fileName;
+        String basePath = !this.basePath.isEmpty() ? this.basePath + "/" : "";
+        final String dest = basePath + uuid + "/" + fileName;
 
         final PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucketName(bucketName)

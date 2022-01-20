@@ -63,7 +63,7 @@ public class GCPStorage extends BaseStorage {
         this(properties.getProperty("storageprovider.gcp.credentialspath"),
                 properties.getProperty("storageprovider.gcp.projectid"),
                 properties.getProperty("storageprovider.gcp.bucketname"),
-                properties.getProperty("storageprovider.gcp.basepath"));
+                properties.getProperty("storageprovider.gcp.basepath", ""));
     }
 
     /**
@@ -71,14 +71,16 @@ public class GCPStorage extends BaseStorage {
      */
     @Override
     public String put(final byte[] fileToUpload, final String fileName, final String uuid) {
-        final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, basePath + "/" + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
+        String basePath = !this.basePath.isEmpty() ? this.basePath + "/" : "";
+        final Blob blob = storage.create(BlobInfo.newBuilder(bucketName, basePath + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobTargetOption.detectContentType());
         return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
     }
 
     @Override
     public String put(InputStream fileToUpload, long fileSize, String fileName, String uuid) {
         try {
-            final Blob blob = storage.createFrom(BlobInfo.newBuilder(bucketName, basePath + "/" + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobWriteOption.detectContentType());
+            String basePath = !this.basePath.isEmpty() ? this.basePath + "/" : "";
+            final Blob blob = storage.createFrom(BlobInfo.newBuilder(bucketName, basePath + uuid + "/" + fileName).build(), fileToUpload, Storage.BlobWriteOption.detectContentType());
             return blob.signUrl(30, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature()).toString();
         } catch (IOException e) {
             e.printStackTrace();

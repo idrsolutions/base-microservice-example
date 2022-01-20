@@ -66,7 +66,7 @@ public class AWSStorage extends BaseStorage {
                 new AWSStaticCredentialsProvider(new BasicAWSCredentials(properties.getProperty("storageprovider.aws.accesskey"),
                         properties.getProperty("storageprovider.aws.secretkey"))),
                 properties.getProperty("storageprovider.aws.bucketname"),
-                properties.getProperty("storageprovider.aws.basepath"));
+                properties.getProperty("storageprovider.aws.basepath", ""));
     }
 
     /**
@@ -87,6 +87,7 @@ public class AWSStorage extends BaseStorage {
         final ObjectMetadata metadata = new ObjectMetadata();
         // Assume zip file
         metadata.setContentType("application/zip");
+        String basePath = !this.basePath.isEmpty() ? this.basePath + "/" : "";
         s3Client.putObject(bucketName, basePath + uuid + "/" + fileName, fileToUpload, metadata);
 
         long expTimeMillis = Instant.now().toEpochMilli();

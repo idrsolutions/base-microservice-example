@@ -39,12 +39,11 @@ public class DigitalOceanStorage extends AWSStorage {
         // storageprovider.do.accesskey
         // storageprovider.do.secretkey
         // storageprovider.do.bucketname
-        // storageprovider.do.bucketname
 
         this(properties.getProperty("storageprovider.do.region"),
                 new AWSStaticCredentialsProvider(new BasicAWSCredentials(properties.getProperty("storageprovider.do.accesskey"),
                         properties.getProperty("storageprovider.do.secretkey"))),
                 properties.getProperty("storageprovider.do.bucketname"),
-                properties.getProperty("storageprovider.do.basepath"));
+                properties.getProperty("storageprovider.do.basepath", ""));
     }
 }
