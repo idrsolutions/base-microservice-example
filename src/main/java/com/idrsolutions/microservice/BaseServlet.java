@@ -80,65 +80,66 @@ public abstract class BaseServlet extends HttpServlet {
         Properties properties = (Properties) getServletContext().getAttribute("properties");
         String storageProvider = properties.getProperty("storageprovider");
 
-        try {
-            switch (storageProvider) {
-                case "AWS":
-                    // storageprovider.aws.region
-                    // storageprovider.aws.accesskey
-                    // storageprovider.aws.secretkey
-                    // storageprovider.aws.bucketname
-                    // storageprovider.aws.basepath
+        if (storageProvider != null) {
+            try {
+                switch (storageProvider) {
+                    case "AWS":
+                        // storageprovider.aws.region
+                        // storageprovider.aws.accesskey
+                        // storageprovider.aws.secretkey
+                        // storageprovider.aws.bucketname
+                        // storageprovider.aws.basepath
 
-                    storage = new AWSStorage(properties);
-                    break;
+                        storage = new AWSStorage(properties);
+                        break;
 
-                case "DigitalOcean":
-                    // storageprovider.do.region
-                    // storageprovider.do.accesskey
-                    // storageprovider.do.secretkey
-                    // storageprovider.do.bucketname
-                    // storageprovider.do.basepath
+                    case "DigitalOcean":
+                        // storageprovider.do.region
+                        // storageprovider.do.accesskey
+                        // storageprovider.do.secretkey
+                        // storageprovider.do.bucketname
+                        // storageprovider.do.basepath
 
-                    storage = new DigitalOceanStorage(properties);
-                    break;
+                        storage = new DigitalOceanStorage(properties);
+                        break;
 
-                case "Azure":
-                    // storageprovider.azure.accountname
-                    // storageprovider.azure.accountkey
-                    // storageprovider.azure.containername
-                    // storageprovider.azure.basepath
+                    case "Azure":
+                        // storageprovider.azure.accountname
+                        // storageprovider.azure.accountkey
+                        // storageprovider.azure.containername
+                        // storageprovider.azure.basepath
 
-                    storage = new AzureStorage(properties);
-                    break;
+                        storage = new AzureStorage(properties);
+                        break;
 
-                case "GCP":
-                    // storageprovider.gcp.credentialspath
-                    // storageprovider.gcp.projectid
-                    // storageprovider.gcp.bucketname
-                    // storageprovider.gcp.basepath
+                    case "GCP":
+                        // storageprovider.gcp.credentialspath
+                        // storageprovider.gcp.projectid
+                        // storageprovider.gcp.bucketname
+                        // storageprovider.gcp.basepath
 
-                    storage = new GCPStorage(properties);
-                    break;
+                        storage = new GCPStorage(properties);
+                        break;
 
-                case "Oracle":
-                    // storageprovider.oracle.ociconfigfilepath
-                    // storageprovider.oracle.profile (nullable)
-                    // storageprovider.oracle.namespace
-                    // storageprovider.oracle.bucketname
-                    // storageprovider.oracle.basepath
+                    case "Oracle":
+                        // storageprovider.oracle.ociconfigfilepath
+                        // storageprovider.oracle.profile (nullable)
+                        // storageprovider.oracle.region
+                        // storageprovider.oracle.namespace
+                        // storageprovider.oracle.bucketname
+                        // storageprovider.oracle.basepath
 
-                    storage = new OracleStorage(properties);
-                    break;
+                        storage = new OracleStorage(properties);
+                        break;
 
-                case "Local":
-                default:
-                    storage = new LocalStorage();
+                    case "":
+                    default:
+                        storage = null;
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
             }
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
         }
-
-
     }
 
     /**
@@ -563,21 +564,12 @@ public abstract class BaseServlet extends HttpServlet {
         convertQueue.submit(() -> {
             try {
                 convert(individual, params, inputFile, outputDir, contextUrl);
+
             } finally {
                 handleCallback(individual, params);
                 individual.setAlive(false);
             }
         });
-    }
-
-    protected void finishConversion(final Individual individual, final File output, final String destName) throws IOException {
-        final byte[] zipFile = ZipHelper.zipFolderInMemory(output.getPath(), true);
-
-        final String downloadURL = storage.put(zipFile, destName + ".zip", individual.getUuid());
-
-        individual.setValue("downloadUrl", downloadURL);
-
-        individual.setState("processed");
     }
 
     /**
