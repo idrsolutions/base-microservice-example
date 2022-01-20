@@ -246,10 +246,10 @@ public abstract class BaseServletContextListener implements ServletContextListen
             error += "storageprovider.gcp.projectid must have a value\n";
         }
 
-        // storageprovider.gcp.bucket
-        String bucket = propertiesFile.getProperty("storageprovider.gcp.bucket");
-        if (bucket == null || bucket.isEmpty()) {
-            error += "storageprovider.gcp.bucket must have a value\n";
+        // storageprovider.gcp.bucketname
+        String bucketname = propertiesFile.getProperty("storageprovider.gcp.bucketname");
+        if (bucketname == null || bucketname.isEmpty()) {
+            error += "storageprovider.gcp.bucketname must have a value\n";
         }
 
         return error;
