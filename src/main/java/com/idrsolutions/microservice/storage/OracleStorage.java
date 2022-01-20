@@ -77,7 +77,7 @@ public class OracleStorage extends BaseStorage {
 
         this(Region.fromRegionId(properties.getProperty("storageprovider.oracle.region")),
                 properties.getProperty("storageprovider.oracle.ociconfigfilepath"),
-                !properties.getProperty("storageprovider.oracle.profile").trim().isEmpty() ? properties.getProperty("storageprovider.oracle.profile") : null,
+                !properties.getProperty("storageprovider.oracle.profile", "").trim().isEmpty() ? properties.getProperty("storageprovider.oracle.profile") : null,
                 properties.getProperty("storageprovider.oracle.namespace"),
                 properties.getProperty("storageprovider.oracle.bucketname"),
                 properties.getProperty("storageprovider.oracle.basepath", ""));
