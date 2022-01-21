@@ -245,7 +245,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#convert(String, Map, File, File, String)
+     * @see BaseServlet#convert(String, File, File, String)
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
@@ -407,7 +407,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         DBHandler.INSTANCE.initializeConversion(uuid, callbackUrl, customData, settings);
 
-        addToQueue(uuid, params, inputFile, outputDir, getContextURL(request));
+        addToQueue(uuid, inputFile, outputDir, getContextURL(request));
 
         return true;
     }
@@ -491,7 +491,7 @@ public abstract class BaseServlet extends HttpServlet {
             }
 
             final File outputDir = createOutputDirectory(uuid);
-            addToQueue(uuid, params, inputFile, outputDir, contextUrl);
+            addToQueue(uuid, inputFile, outputDir, contextUrl);
         });
 
         return true;
@@ -501,19 +501,18 @@ public abstract class BaseServlet extends HttpServlet {
      * Add a conversion task to the thread queue.
      *
      * @param uuid the uuid of this conversion
-     * @param params the parameter map from the request
      * @param inputFile the input file to convert
      * @param outputDir the output directory to convert to
      * @param contextUrl the context url of the servlet
      */
-    private void addToQueue(final String uuid, final Map<String, String[]> params, final File inputFile,
+    private void addToQueue(final String uuid, final File inputFile,
                             final File outputDir, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
-                convert(uuid, params, inputFile, outputDir, contextUrl);
+                convert(uuid, inputFile, outputDir, contextUrl);
             } finally {
                 handleCallback(uuid);
                 DBHandler.INSTANCE.setAlive(uuid, false);
@@ -541,13 +540,12 @@ public abstract class BaseServlet extends HttpServlet {
      * the Individual's UUID.
      *
      * @param uuid the uuid of the conversion
-     * @param params the map of parameters from the request
      * @param inputFile the File to convert
      * @param outputDir the directory the converted file should be written to
      * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
-    protected abstract void convert(String uuid, Map<String, String[]> params,
+    protected abstract void convert(String uuid,
                                     File inputFile, File outputDir, String contextUrl);
 
     /**
