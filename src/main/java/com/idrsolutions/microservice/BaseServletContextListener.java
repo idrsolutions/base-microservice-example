@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -98,37 +99,38 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
 
         String error = "";
-        switch (storageProvider) {
+        switch (storageProvider.toLowerCase()) {
             case "":
                 break;
 
-            case "AWS":
+            case "aws":
                 error += validateAWS(propertiesFile);
                 break;
 
-            case "DigitalOcean":
+            case "digitalocean":
                 error += validateDigitalOcean(propertiesFile);
                 break;
 
-            case "Azure":
+            case "azure":
                 error += validateAzure(propertiesFile);
                 break;
 
-            case "GCP":
+            case "gcp":
                 error += validateGCP(propertiesFile);
                 break;
 
-            case "Oracle":
+            case "oracle":
                 error += validateOracle(propertiesFile);
                 break;
 
             default:
                 error += "Unknown storage option, available options are:\n" +
-                        "AWS\n" +
-                        "DigitalOcean\n" +
-                        "Azure\n" +
-                        "GCP\n" +
-                        "Oracle";
+                        "aws\n" +
+                        "digitalocean\n" +
+                        "azure\n" +
+                        "gcp\n" +
+                        "oracle\n\n" +
+                        "Leave blank to disable remote storage";
         }
 
         if (!error.isEmpty()) {

@@ -82,8 +82,8 @@ public abstract class BaseServlet extends HttpServlet {
 
         if (storageProvider != null) {
             try {
-                switch (storageProvider) {
-                    case "AWS":
+                switch (storageProvider.toLowerCase()) {
+                    case "aws":
                         // storageprovider.aws.region
                         // storageprovider.aws.accesskey
                         // storageprovider.aws.secretkey
@@ -93,7 +93,7 @@ public abstract class BaseServlet extends HttpServlet {
                         storage = new AWSStorage(properties);
                         break;
 
-                    case "DigitalOcean":
+                    case "digitalocean":
                         // storageprovider.do.region
                         // storageprovider.do.accesskey
                         // storageprovider.do.secretkey
@@ -103,7 +103,7 @@ public abstract class BaseServlet extends HttpServlet {
                         storage = new DigitalOceanStorage(properties);
                         break;
 
-                    case "Azure":
+                    case "azure":
                         // storageprovider.azure.accountname
                         // storageprovider.azure.accountkey
                         // storageprovider.azure.containername
@@ -112,7 +112,7 @@ public abstract class BaseServlet extends HttpServlet {
                         storage = new AzureStorage(properties);
                         break;
 
-                    case "GCP":
+                    case "gcp":
                         // storageprovider.gcp.credentialspath
                         // storageprovider.gcp.projectid
                         // storageprovider.gcp.bucketname
@@ -121,7 +121,7 @@ public abstract class BaseServlet extends HttpServlet {
                         storage = new GCPStorage(properties);
                         break;
 
-                    case "Oracle":
+                    case "oracle":
                         // storageprovider.oracle.ociconfigfilepath
                         // storageprovider.oracle.profile (nullable)
                         // storageprovider.oracle.region
