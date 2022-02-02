@@ -286,7 +286,7 @@ final class ExternalDatabase implements Database {
             settingsStatement.setString(1, uuid);
 
             final ResultSet settingsResultSet = settingsStatement.executeQuery();
-            HashMap<String, String> settings = new HashMap<>();
+            final HashMap<String, String> settings = new HashMap<>();
 
             while (settingsResultSet.next()) {
                 settings.put(settingsResultSet.getString("key"), settingsResultSet.getString("value"));
@@ -305,7 +305,7 @@ final class ExternalDatabase implements Database {
             customDataStatement.setString(1, uuid);
 
             final ResultSet customDataResultSet = customDataStatement.executeQuery();
-            HashMap<String, String> customData = new HashMap<>();
+            final HashMap<String, String> customData = new HashMap<>();
 
             while (customDataResultSet.next()) {
                 customData.put(customDataResultSet.getString("key"), customDataResultSet.getString("value"));
