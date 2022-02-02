@@ -37,7 +37,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
-
         final Properties propertiesFile = new Properties();
         final ServletContext servletContext = servletContextEvent.getServletContext();
         final File externalFile = new File(getConfigPath() + getConfigName());
