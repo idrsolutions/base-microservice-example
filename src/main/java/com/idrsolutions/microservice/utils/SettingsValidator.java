@@ -76,9 +76,14 @@ public class SettingsValidator {
         if (paramMap.containsKey(setting)) {
             final String value = paramMap.remove(setting);
 
-            if (!value.isEmpty() && value.matches("-?\\d+(\\.\\d+)?")) {
-                final float fValue = Float.parseFloat(value);
-                if (fValue < range[0] && range[1] < fValue) {
+            if (!value.isEmpty()) {
+                final float fValue;
+                if (value.matches("-?\\d+\\.?(\\d+)?")) {
+                    fValue = Float.parseFloat(value);
+                } else {
+                    fValue = Float.NaN;
+                }
+                if (Float.isNaN(fValue) || (fValue < range[0] || range[1] < fValue)) {
                     errorMessage.append(required ? "Required " : "Optional ").append("setting \"").append(setting)
                             .append("\" has incorrect value. Valid values are between ").append(range[0]).append(" and ")
                             .append(range[1]).append(".\n");
