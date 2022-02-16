@@ -43,12 +43,12 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(1, TimeUnit.MINUTES)) {
                 process.destroy();
-                DBHandler.INSTANCE.setError(uuid, 1050, "Libreoffice timed out after 1 minute");
+                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after 1 minute");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
             LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
-            DBHandler.INSTANCE.setError(uuid, 1070, "Internal error processing file");
+            DBHandler.getInstance().setError(uuid, 1070, "Internal error processing file");
             return false;
         } finally {
             FileHelper.deleteFolder(new File(uniqueLOProfile));

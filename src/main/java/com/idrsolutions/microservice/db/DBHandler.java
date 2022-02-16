@@ -27,13 +27,20 @@ import java.util.logging.Logger;
 
 public abstract class DBHandler {
     private static final Logger LOG = Logger.getLogger(DBHandler.class.getName());
-    public static Database INSTANCE = null;
+    private static Database INSTANCE = null;
 
     private static String databaseJNDIName;
 
     public static void initialise() {
         final DataSource dataSource = setupDatasource();
         INSTANCE = dataSource != null ? new ExternalDatabase(dataSource) : new MemoryDatabase();
+    }
+
+    public static Database getInstance() {
+        if (INSTANCE == null) {
+            throw new IllegalStateException("Attempted to access instance before it has been initialised");
+        }
+        return INSTANCE;
     }
 
     private static DataSource setupDatasource() {

@@ -179,7 +179,7 @@ public abstract class BaseServlet extends HttpServlet {
 
         final Map<String, String> status;
         try {
-            status = DBHandler.INSTANCE.getStatus(uuidStr);
+            status = DBHandler.getInstance().getStatus(uuidStr);
         } catch (final SQLException e) {
             LOG.log(Level.SEVERE, "Database error", e);
             doError(request, response, "Database failure", 500);
@@ -249,7 +249,7 @@ public abstract class BaseServlet extends HttpServlet {
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-        DBHandler.INSTANCE.cleanOldEntries(individualTTL);
+        DBHandler.getInstance().cleanOldEntries(individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -405,7 +405,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String[] rawParam = params.get("callbackUrl");
         final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
 
-        DBHandler.INSTANCE.initializeConversion(uuid, callbackUrl, customData, settings);
+        DBHandler.getInstance().initializeConversion(uuid, callbackUrl, customData, settings);
 
         addToQueue(uuid, inputFile, outputDir, getContextURL(request));
 
@@ -477,7 +477,7 @@ public abstract class BaseServlet extends HttpServlet {
         final String[] rawParam = params.get("callbackUrl");
         final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
 
-        DBHandler.INSTANCE.initializeConversion(uuid, callbackUrl, customData, settings);
+        DBHandler.getInstance().initializeConversion(uuid, callbackUrl, customData, settings);
 
         downloadQueue.submit(() -> {
             File inputFile = null;
@@ -485,9 +485,9 @@ public abstract class BaseServlet extends HttpServlet {
                 final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
                 inputFile = outputFile(finalFilename, uuid, fileBytes);
             } catch (IOException e) {
-                DBHandler.INSTANCE.setError(uuid, 1200, "Could not get file from URL");
+                DBHandler.getInstance().setError(uuid, 1200, "Could not get file from URL");
             } catch (SizeLimitExceededException e) {
-                DBHandler.INSTANCE.setError(uuid, 1210, "File exceeds file size limit");
+                DBHandler.getInstance().setError(uuid, 1210, "File exceeds file size limit");
             }
 
             final File outputDir = createOutputDirectory(uuid);
@@ -515,7 +515,7 @@ public abstract class BaseServlet extends HttpServlet {
                 convert(uuid, inputFile, outputDir, contextUrl);
             } finally {
                 handleCallback(uuid);
-                DBHandler.INSTANCE.setAlive(uuid, false);
+                DBHandler.getInstance().setAlive(uuid, false);
             }
         });
     }
@@ -653,11 +653,11 @@ public abstract class BaseServlet extends HttpServlet {
     private void handleCallback(final String uuid) {
         final String callbackUrl;
         try {
-            callbackUrl = DBHandler.INSTANCE.getCallbackUrl(uuid);
+            callbackUrl = DBHandler.getInstance().getCallbackUrl(uuid);
 
             if (!callbackUrl.equals("")) {
                 final Map<String, String> status;
-                status = DBHandler.INSTANCE.getStatus(uuid);
+                status = DBHandler.getInstance().getStatus(uuid);
 
                 if (status == null) {
                     LOG.log(Level.SEVERE, "Callback failed. UUID was not in database.");
