@@ -20,7 +20,6 @@
  */
 package com.idrsolutions.microservice;
 
-import com.idrsolutions.microservice.storage.IStorage;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.FileHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;

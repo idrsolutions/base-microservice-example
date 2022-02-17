@@ -3,7 +3,7 @@ package com.idrsolutions.microservice.storage;
 import java.io.File;
 import java.io.InputStream;
 
-public interface IStorage {
+public interface Storage {
     /**
      * Places the given data as a file inside the storage
      * @param fileToUpload The file in raw bytes to upload

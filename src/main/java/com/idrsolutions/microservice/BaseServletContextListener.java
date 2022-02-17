@@ -1,6 +1,6 @@
 package com.idrsolutions.microservice;
 
-import com.idrsolutions.microservice.storage.IStorage;
+import com.idrsolutions.microservice.storage.Storage;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -10,8 +10,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,12 +54,12 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
 
         validateConfigFileValues(propertiesFile);
-        String storageProvider = propertiesFile.getProperty("storageprovider");
+        final String storageProvider = propertiesFile.getProperty("storageprovider");
 
         if (storageProvider != null) {
             try {
-                Class<?> cls = this.getClass().getClassLoader().loadClass(storageProvider);
-                if (!IStorage.class.isAssignableFrom(cls)) throw new ClassCastException();
+                final Class<?> cls = this.getClass().getClassLoader().loadClass(storageProvider);
+                if (!Storage.class.isAssignableFrom(cls)) throw new ClassCastException();
 
                 servletContext.setAttribute("storage", cls.getConstructor(Properties.class).newInstance(propertiesFile));
             } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
