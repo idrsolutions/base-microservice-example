@@ -42,7 +42,8 @@ class MemoryDatabase implements Database {
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
+    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData,
+                                     final Map<String, String> settings) {
         imap.put(uuid, new Individual(uuid, callbackUrl, customData, settings));
     }
 
@@ -57,7 +58,7 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public void setCustomValue(String uuid, String key, String value) {
+    public void setCustomValue(final String uuid, final String key, final String value) {
         imap.get(uuid).getCustomValues().put(key, value);
     }
 
@@ -102,7 +103,7 @@ class MemoryDatabase implements Database {
     }
 
     @Override
-    public String getCallbackUrl(String uuid) {
+    public String getCallbackUrl(final String uuid) {
         final Individual individual = imap.get(uuid);
 
         if (individual == null) {
@@ -156,7 +157,8 @@ class MemoryDatabase implements Database {
          *
          * @param uuid the uuid to identify this individual
          */
-        Individual(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
+        Individual(final String uuid, String callbackUrl, final Map<String, String> customData,
+                   final Map<String, String> settings) {
             this.uuid = uuid;
             this.callbackUrl = callbackUrl;
             timestamp = new Date().getTime();
@@ -195,7 +197,7 @@ class MemoryDatabase implements Database {
             return callbackUrl;
         }
 
-        public void setCallbackUrl(String callbackUrl) {
+        public void setCallbackUrl(final String callbackUrl) {
             this.callbackUrl = callbackUrl;
         }
 
@@ -215,7 +217,7 @@ class MemoryDatabase implements Database {
          *
          * @param alive the alive state of the Individual
          */
-        private void setAlive(boolean alive) {
+        private void setAlive(final boolean alive) {
             isAlive = alive;
         }
 
@@ -235,7 +237,7 @@ class MemoryDatabase implements Database {
          *
          * @param state the state of the Individual
          */
-        private void setState(String state) {
+        private void setState(final String state) {
             this.state = state;
         }
 

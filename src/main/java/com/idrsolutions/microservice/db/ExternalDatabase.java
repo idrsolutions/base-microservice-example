@@ -108,7 +108,8 @@ final class ExternalDatabase implements Database {
      * @param settings   Settings for the conversion
      */
     @Override
-    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings) {
+    public void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData,
+                                     final Map<String, String> settings) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement individualStatement = connection.prepareStatement("INSERT INTO conversions (uuid, callbackUrl, isAlive, theTime, state, errorCode, errorMessage) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             individualStatement.setString(1, uuid);
@@ -263,7 +264,7 @@ final class ExternalDatabase implements Database {
     }
 
     @Override
-    public String getCallbackUrl(String uuid) throws SQLException {
+    public String getCallbackUrl(final String uuid) throws SQLException {
         try (Connection connection = dataSource.getConnection();
             PreparedStatement callbackStatement = connection.prepareStatement("SELECT callbackUrl FROM conversions WHERE uuid = ?;")) {
             callbackStatement.setString(1, uuid);
@@ -279,7 +280,7 @@ final class ExternalDatabase implements Database {
 
     @Override
     public Map<String, String> getSettings(final String uuid) throws SQLException {
-        try(Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.getConnection();
             PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;")) {
 
             // Get the hashmaps from the other tables
@@ -298,7 +299,7 @@ final class ExternalDatabase implements Database {
 
     @Override
     public Map<String, String> getCustomData(final String uuid) throws SQLException {
-        try(Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.getConnection();
             PreparedStatement customDataStatement = connection.prepareStatement("SELECT key, value FROM customData WHERE uuid = ?;")) {
 
             // Get the hashmaps from the other tables

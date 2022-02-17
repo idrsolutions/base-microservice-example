@@ -32,7 +32,8 @@ public interface Database {
      * @param customData Custom data for the conversion
      * @param settings Settings for the conversion
      */
-    void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData, final Map<String, String> settings);
+    void initializeConversion(final String uuid, String callbackUrl, final Map<String, String> customData,
+                              final Map<String, String> settings);
 
     /**
      * Removes all individuals in the database who are older than the passed Time to Live

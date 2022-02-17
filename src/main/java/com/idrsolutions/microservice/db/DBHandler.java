@@ -57,7 +57,6 @@ public abstract class DBHandler {
 
             LOG.warning(String.format("Failed to find Datasource with JNDI %s, falling back to internal memory storage", databaseJNDIName));
         } else {
-            // TODO: Point towards some instructions for setup
             LOG.info("No Datasource specified, falling back to internal memory storage");
         }
 
