@@ -58,12 +58,6 @@ final class ExternalDatabase implements Database {
 
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
-//            // Clear Tables
-//            statement.executeUpdate("DROP TABLE IF EXISTS settings");
-//            statement.executeUpdate("DROP TABLE IF EXISTS customValues");
-//            statement.executeUpdate("DROP TABLE IF EXISTS customData");
-//            statement.executeUpdate("DROP TABLE IF EXISTS conversions");
-
             // Create Tables
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS conversions (" +
                     "uuid VARCHAR(36), " +
