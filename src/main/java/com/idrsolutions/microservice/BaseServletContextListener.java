@@ -18,16 +18,16 @@ import java.util.logging.Logger;
 
 public abstract class BaseServletContextListener implements ServletContextListener {
 
-    protected static final String KEY_PROPERTIES = "properties";
-    protected static final String KEY_PROPERTY_LIBRE_OFFICE = "libreOfficePath";
-    private static final String KEY_PROPERTY_CONVERSION_COUNT = "conversionThreadCount";
-    private static final String KEY_PROPERTY_DOWNLOAD_COUNT = "downloadThreadCount";
-    private static final String KEY_PROPERTY_CALLBACK_COUNT = "callbackThreadCount";
-    private static final String KEY_PROPERTY_INPUT_PATH = "inputPath";
-    protected static final String KEY_PROPERTY_OUTPUT_PATH = "outputPath";
-    private static final String KEY_PROPERTY_INDIVIDUAL_TTL = "individualTTL";
-    private static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
-    private static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
+    public static final String KEY_PROPERTIES = "properties";
+    public static final String KEY_PROPERTY_LIBRE_OFFICE = "libreOfficePath";
+    public static final String KEY_PROPERTY_CONVERSION_COUNT = "conversionThreadCount";
+    public static final String KEY_PROPERTY_DOWNLOAD_COUNT = "downloadThreadCount";
+    public static final String KEY_PROPERTY_CALLBACK_COUNT = "callbackThreadCount";
+    public static final String KEY_PROPERTY_INPUT_PATH = "inputPath";
+    public static final String KEY_PROPERTY_OUTPUT_PATH = "outputPath";
+    public static final String KEY_PROPERTY_INDIVIDUAL_TTL = "individualTTL";
+    public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
+    public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
 
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
