@@ -170,7 +170,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @param response the response to send once this method exits
      */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+    protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
         final String uuidStr = request.getParameter("uuid");
         if (uuidStr == null) {
             doError(request, response, "No uuid provided", 404);
@@ -505,8 +505,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @param outputDir the output directory to convert to
      * @param contextUrl the context url of the servlet
      */
-    private void addToQueue(final String uuid, final File inputFile,
-                            final File outputDir, final String contextUrl) {
+    private void addToQueue(final String uuid, final File inputFile, final File outputDir, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
@@ -545,8 +544,8 @@ public abstract class BaseServlet extends HttpServlet {
      * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
-    protected abstract void convert(String uuid,
-                                    File inputFile, File outputDir, String contextUrl);
+    protected abstract void convert(final String uuid, final File inputFile, final File outputDir,
+                                    final String contextUrl);
 
     /**
      * Write the given file bytes to the output directory under filename.
@@ -557,11 +556,11 @@ public abstract class BaseServlet extends HttpServlet {
      * @return the created file
      * @throws IOException on file not being writable
      */
-    private File outputFile(String filename, final String uuid, byte[] fileBytes) throws IOException {
+    private File outputFile(final String filename, final String uuid, final byte[] fileBytes) throws IOException {
         final File inputDir = createInputDirectory(uuid);
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
-        try(FileOutputStream output = new FileOutputStream(inputFile)) {
+        try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
             output.flush();
         }
@@ -720,7 +719,7 @@ public abstract class BaseServlet extends HttpServlet {
             return out;
         }
 
-        try(JsonParser jp = Json.createParser(new StringReader(settings))) {
+        try (JsonParser jp = Json.createParser(new StringReader(settings))) {
             String currentKey = null;
             byte arrayDepth = 0;
             while (jp.hasNext()) {
