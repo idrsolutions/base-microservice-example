@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * An abstract implementation of IStorage that pre-implements the File version of {@link #put(File, String, String)} to load the file into memory and put it through {@link #put(byte[], String, String)}
+ * An abstract implementation of Storage that pre-implements the File version of {@link #put(File, String, String)} to load the file into memory and put it through {@link #put(byte[], String, String)}
  */
 public abstract class BaseStorage implements Storage {
     protected static final Logger LOG = Logger.getLogger(BaseStorage.class.getName());
