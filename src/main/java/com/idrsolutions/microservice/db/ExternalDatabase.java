@@ -63,7 +63,7 @@ final class ExternalDatabase implements Database {
                     "uuid VARCHAR(36), " +
                     "callbackUrl TEXT, " +
                     "isAlive BOOLEAN, " +
-                    "theTime UNSIGNED BIGINT(20), " +
+                    "theTime BIGINT(20) UNSIGNED, " +
                     "state VARCHAR(10), " +
                     "errorCode VARCHAR(5), " +
                     "errorMessage VARCHAR(255), " +
@@ -72,23 +72,23 @@ final class ExternalDatabase implements Database {
             // Setup many-to-one relations with Cascade Delete to clear them out when the reference is deleted
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS settings (" +
                     "uuid VARCHAR(36), " +
-                    "key VARCHAR(70), " +
+                    "mapKey VARCHAR(70), " +
                     "value VARCHAR(255), " +
-                    "PRIMARY KEY (uuid, key), " +
+                    "PRIMARY KEY (uuid, mapKey), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customValues (" +
                     "uuid VARCHAR(36), " +
-                    "key VARCHAR(70), " +
+                    "mapKey VARCHAR(70), " +
                     "value TEXT, " +
-                    "PRIMARY KEY (uuid, key), " +
+                    "PRIMARY KEY (uuid, mapKey), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customData (" +
                     "uuid VARCHAR(36), " +
-                    "key VARCHAR(70), " +
+                    "mapKey VARCHAR(70), " +
                     "value TEXT, " +
-                    "PRIMARY KEY (uuid, key), " +
+                    "PRIMARY KEY (uuid, mapKey), " +
                     "FOREIGN KEY (uuid) REFERENCES conversions(uuid) ON DELETE CASCADE ON UPDATE CASCADE" +
                     ")");
         }
