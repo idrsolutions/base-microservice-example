@@ -20,11 +20,13 @@
  */
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.db.DBHandler;
 import com.idrsolutions.microservice.utils.DownloadHelper;
 import com.idrsolutions.microservice.utils.FileHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 
 import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonParser;
 import javax.json.stream.JsonParsingException;
 import javax.naming.SizeLimitExceededException;
@@ -36,10 +38,10 @@ import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
@@ -71,7 +73,6 @@ public abstract class BaseServlet extends HttpServlet {
 
     private static final int NUM_DOWNLOAD_RETRIES = 2;
 
-    private final ConcurrentHashMap<String, Individual> imap = new ConcurrentHashMap<>();
 
     /**
      * Get the location where input files is stored
@@ -167,23 +168,33 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see Individual#toJsonString()
      */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+    protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
         final String uuidStr = request.getParameter("uuid");
         if (uuidStr == null) {
             doError(request, response, "No uuid provided", 404);
             return;
         }
 
-        final Individual individual = imap.get(uuidStr);
-        if (individual == null) {
+        final Map<String, String> status;
+        try {
+            status = DBHandler.getInstance().getStatus(uuidStr);
+        } catch (final SQLException e) {
+            LOG.log(Level.SEVERE, "Database error", e);
+            doError(request, response, "Database failure", 500);
+            return;
+        }
+
+        if (status == null) {
             doError(request, response, "Unknown uuid: " + uuidStr, 404);
             return;
         }
 
-        sendResponse(request, response, individual.toJsonString());
+        final JsonObjectBuilder json = Json.createObjectBuilder();
+        status.forEach(json::add);
+
+        sendResponse(request, response, json.build().toString());
     }
 
     /**
@@ -234,12 +245,11 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#convert(Individual, Map, File, File, String)
+     * @see BaseServlet#convert(String, File, File, String)
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-
-        imap.entrySet().removeIf(entry -> entry.getValue().getTimestamp() < new Date().getTime() - individualTTL);
+        DBHandler.getInstance().cleanOldEntries(individualTTL);
 
         final String inputType = request.getParameter("input");
         if (inputType == null) {
@@ -247,26 +257,25 @@ public abstract class BaseServlet extends HttpServlet {
             return;
         }
 
-        final String uuidStr = UUID.randomUUID().toString();
-        final Individual individual = new Individual(uuidStr);
+        final String uuid = UUID.randomUUID().toString();
 
-        if (!validateRequest(request, response, individual)) {
+        if (!validateRequest(request, response, uuid)) {
             return;
         }
 
-        individual.setCustomData(request.getAttribute("com.idrsolutions.microservice.customData"));
-
         final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
+        final Map<String, String> customData = (Map<String, String>) request.getAttribute("com.idrsolutions.microservice.customData");
+        final Map<String, String> settings = (Map<String, String>) request.getAttribute("com.idrsolutions.microservice.settings");
 
         switch (inputType) {
             case "upload":
-                if (!handleFileFromRequest(individual, request, response, parameterMap)) {
+                if (!handleFileFromRequest(uuid, request, response, parameterMap, customData, settings)) {
                     return;
                 }
                 break;
 
             case "download":
-                if (!handleFileFromUrl(individual, request, response, parameterMap)) {
+                if (!handleFileFromUrl(uuid, request, response, parameterMap, customData, settings)) {
                     return;
                 }
                 break;
@@ -276,9 +285,7 @@ public abstract class BaseServlet extends HttpServlet {
                 return;
         }
 
-        imap.put(uuidStr, individual);
-
-        sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuidStr).build().toString());
+        sendResponse(request, response, Json.createObjectBuilder().add("uuid", uuid).build().toString());
     }
 
     /**
@@ -337,14 +344,15 @@ public abstract class BaseServlet extends HttpServlet {
      * This method blocks until the file is initially processed and exists when
      * the conversion begins.
      *
-     * @param individual the individual associated with this conversion
+     * @param uuid the uuid associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
      * @param params the parameter map from the request
      * @return true on success, false on failure
      */
-    private boolean handleFileFromRequest(final Individual individual, final HttpServletRequest request,
-                                          final HttpServletResponse response, final Map<String, String[]> params) {
+    private boolean handleFileFromRequest(final String uuid, final HttpServletRequest request,
+                                          final HttpServletResponse response, final Map<String, String[]> params,
+                                          final Map<String, String> customData, final Map<String, String> settings) {
         final Part filePart;
         try {
             filePart = request.getPart("file");
@@ -385,16 +393,21 @@ public abstract class BaseServlet extends HttpServlet {
             final byte[] fileBytes = new byte[(int) filePart.getSize()];
             fileContent.read(fileBytes);
             fileContent.close();
-            inputFile = outputFile(originalFileName, individual, fileBytes);
+            inputFile = outputFile(originalFileName, uuid, fileBytes);
         } catch (final IOException e) {
             LOG.log(Level.SEVERE, "IOException when reading an uploaded file", e);
             doError(request, response, "Internal error", 500); // Failed to save file to disk
             return false;
         }
 
-        final File outputDir = createOutputDirectory(individual.getUuid());
+        final File outputDir = createOutputDirectory(uuid);
 
-        addToQueue(individual, params, inputFile, outputDir, getContextURL(request));
+        final String[] rawParam = params.get("callbackUrl");
+        final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
+
+        DBHandler.getInstance().initializeConversion(uuid, callbackUrl, customData, settings);
+
+        addToQueue(uuid, inputFile, outputDir, getContextURL(request));
 
         return true;
     }
@@ -405,14 +418,15 @@ public abstract class BaseServlet extends HttpServlet {
      * This method does not block when attempting to download the file from the
      * url.
      *
-     * @param individual the individual associated with this conversion
+     * @param uuid the uuid associated with this conversion
      * @param request the request for this conversion
      * @param response the response object for the request
      * @param params the parameter map from the request
      * @return true on initial success (url has been provided)
      */
-    private boolean handleFileFromUrl(final Individual individual, final HttpServletRequest request,
-                                      final HttpServletResponse response, final Map<String, String[]> params) {
+    private boolean handleFileFromUrl(final String uuid, final HttpServletRequest request,
+                                      final HttpServletResponse response, final Map<String, String[]> params,
+                                      final Map<String, String> customData, final Map<String, String> settings) {
 
         String url = request.getParameter("url");
         if (url == null || url.isEmpty()) {
@@ -460,19 +474,24 @@ public abstract class BaseServlet extends HttpServlet {
 
         final ExecutorService downloadQueue = (ExecutorService) getServletContext().getAttribute("downloadQueue");
 
+        final String[] rawParam = params.get("callbackUrl");
+        final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
+
+        DBHandler.getInstance().initializeConversion(uuid, callbackUrl, customData, settings);
+
         downloadQueue.submit(() -> {
             File inputFile = null;
             try {
                 final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
-                inputFile = outputFile(finalFilename, individual, fileBytes);
+                inputFile = outputFile(finalFilename, uuid, fileBytes);
             } catch (IOException e) {
-                individual.doError(1200, "Could not get file from URL");
+                DBHandler.getInstance().setError(uuid, 1200, "Could not get file from URL");
             } catch (SizeLimitExceededException e) {
-                individual.doError(1210, "File exceeds file size limit");
+                DBHandler.getInstance().setError(uuid, 1210, "File exceeds file size limit");
             }
 
-            final File outputDir = createOutputDirectory(individual.getUuid());
-            addToQueue(individual, params, inputFile, outputDir, contextUrl);
+            final File outputDir = createOutputDirectory(uuid);
+            addToQueue(uuid, inputFile, outputDir, contextUrl);
         });
 
         return true;
@@ -481,23 +500,21 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Add a conversion task to the thread queue.
      *
-     * @param individual the individual belonging to this conversion
-     * @param params the parameter map from the request
+     * @param uuid the uuid of this conversion
      * @param inputFile the input file to convert
      * @param outputDir the output directory to convert to
      * @param contextUrl the context url of the servlet
      */
-    private void addToQueue(final Individual individual, final Map<String, String[]> params, final File inputFile,
-                            final File outputDir, final String contextUrl) {
+    private void addToQueue(final String uuid, final File inputFile, final File outputDir, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
-                convert(individual, params, inputFile, outputDir, contextUrl);
+                convert(uuid, inputFile, outputDir, contextUrl);
             } finally {
-                handleCallback(individual, params);
-                individual.setAlive(false);
+                handleCallback(uuid);
+                DBHandler.getInstance().setAlive(uuid, false);
             }
         });
     }
@@ -511,41 +528,39 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request for this conversion
      * @param response the response object for the request
-     * @param individual the individual belonging to this conversion
+     * @param uuid the uuid of this conversion
      * @return true if the request is valid, false if not
      */
     protected abstract boolean validateRequest(final HttpServletRequest request, final HttpServletResponse response,
-                                               final Individual individual);
+                                               final String uuid);
 
     /**
      * This method converts a file and writes it to the output directory under
      * the Individual's UUID.
      *
-     * @param individual Internal representation of individual who made this
-     * request
-     * @param params the map of parameters from the request
+     * @param uuid the uuid of the conversion
      * @param inputFile the File to convert
      * @param outputDir the directory the converted file should be written to
      * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
-    protected abstract void convert(Individual individual, Map<String, String[]> params,
-                                    File inputFile, File outputDir, String contextUrl);
+    protected abstract void convert(final String uuid, final File inputFile, final File outputDir,
+                                    final String contextUrl);
 
     /**
      * Write the given file bytes to the output directory under filename.
      *
      * @param filename the filename to output to
-     * @param individual the individual that began the conversion request
+     * @param uuid the uuid of the conversion request
      * @param fileBytes the bytes to be written.
      * @return the created file
      * @throws IOException on file not being writable
      */
-    private File outputFile(String filename, Individual individual, byte[] fileBytes) throws IOException {
-        final File inputDir = createInputDirectory(individual.getUuid());
+    private File outputFile(final String filename, final String uuid, final byte[] fileBytes) throws IOException {
+        final File inputDir = createInputDirectory(uuid);
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
 
-        try (final FileOutputStream output = new FileOutputStream(inputFile)) {
+        try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
             output.flush();
         }
@@ -632,19 +647,30 @@ public abstract class BaseServlet extends HttpServlet {
      * Checks if the callbackUrl parameter was included in the request, if so it
      * will queue the callback into the callbackQueue.
      *
-     * @param individual the Individual that is sent to the URL
-     * @param params the request parameters
+     * @param uuid the uuid of the conversion to send to the callback URL
      */
-    private void handleCallback(final Individual individual, final Map<String, String[]> params) {
-        final String[] rawParam = params.get("callbackUrl");
-
-        if (rawParam != null && rawParam.length > 0) {
-            final String callbackUrl = rawParam[0];
+    private void handleCallback(final String uuid) {
+        final String callbackUrl;
+        try {
+            callbackUrl = DBHandler.getInstance().getCallbackUrl(uuid);
 
             if (!callbackUrl.equals("")) {
+                final Map<String, String> status;
+                status = DBHandler.getInstance().getStatus(uuid);
+
+                if (status == null) {
+                    LOG.log(Level.SEVERE, "Callback failed. UUID was not in database.");
+                    return;
+                }
+
+                final JsonObjectBuilder json = Json.createObjectBuilder();
+                status.forEach(json::add);
+
                 final ScheduledExecutorService callbackQueue = (ScheduledExecutorService) getServletContext().getAttribute("callbackQueue");
-                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, individual.toJsonString(), callbackQueue, 1));
+                callbackQueue.submit(() -> HttpHelper.sendCallback(callbackUrl, json.build().toString(), callbackQueue, 1));
             }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Database error while handling callback", e);
         }
     }
 
@@ -693,7 +719,7 @@ public abstract class BaseServlet extends HttpServlet {
             return out;
         }
 
-        try (final JsonParser jp = Json.createParser(new StringReader(settings))) {
+        try (JsonParser jp = Json.createParser(new StringReader(settings))) {
             String currentKey = null;
             byte arrayDepth = 0;
             while (jp.hasNext()) {

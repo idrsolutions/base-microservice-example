@@ -1,5 +1,7 @@
 package com.idrsolutions.microservice;
 
+import com.idrsolutions.microservice.db.DBHandler;
+import com.idrsolutions.microservice.db.Database;
 import com.idrsolutions.microservice.utils.FileDeletionService;
 
 import javax.servlet.ServletContext;
@@ -28,6 +30,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_INDIVIDUAL_TTL = "individualTTL";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
+
+    private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
 
     private static final Logger LOG = Logger.getLogger(BaseServletContextListener.class.getName());
 
@@ -81,6 +85,9 @@ public abstract class BaseServletContextListener implements ServletContextListen
                     Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY))
             ));
         }
+
+        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
+        DBHandler.initialise();
     }
 
     @Override
