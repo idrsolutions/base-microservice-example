@@ -53,7 +53,6 @@ import java.util.logging.Logger;
  * and UUID's.
  */
 public abstract class BaseServlet extends HttpServlet {
-
     private static final Logger LOG = Logger.getLogger(BaseServlet.class.getName());
 
     protected static final String USER_HOME;

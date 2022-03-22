@@ -2,6 +2,7 @@ package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.db.DBHandler;
 import com.idrsolutions.microservice.db.Database;
+import com.idrsolutions.microservice.storage.Storage;
 import com.idrsolutions.microservice.utils.FileDeletionService;
 
 import javax.servlet.ServletContext;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,7 +43,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     @Override
     public void contextInitialized(final ServletContextEvent servletContextEvent) {
-
         final Properties propertiesFile = new Properties();
         final ServletContext servletContext = servletContextEvent.getServletContext();
         final File externalFile = new File(getConfigPath() + getConfigName());
@@ -61,6 +62,24 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
 
         validateConfigFileValues(propertiesFile);
+        final String storageProvider = propertiesFile.getProperty("storageprovider");
+
+        if (storageProvider != null) {
+            try {
+                final Class<?> cls = this.getClass().getClassLoader().loadClass(storageProvider);
+                if (!Storage.class.isAssignableFrom(cls)) throw new ClassCastException();
+
+                servletContext.setAttribute("storage", cls.getConstructor(Properties.class).newInstance(propertiesFile));
+            } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+                throw new IllegalStateException(e.getCause());
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Failed to find a valid constructor, the IStorage implementation needs to have a constructor that takes a properties object", e);
+            } catch (ClassCastException e) {
+                throw new IllegalStateException("The storage provider class must be an implementation of com.idrsolutions.microservice.storage.IStorage", e);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Failed to find a class with that name", e);
+            }
+        }
 
         servletContext.setAttribute(KEY_PROPERTIES, propertiesFile);
 
@@ -100,7 +119,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         ((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).shutdownNow();
     }
-
 
     protected void validateConfigFileValues(final Properties propertiesFile) {
         validateConversionThreadCount(propertiesFile);
