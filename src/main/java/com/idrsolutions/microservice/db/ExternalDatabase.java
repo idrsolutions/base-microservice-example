@@ -63,7 +63,7 @@ final class ExternalDatabase implements Database {
                     "uuid VARCHAR(36), " +
                     "callbackUrl TEXT, " +
                     "isAlive BOOLEAN, " +
-                    "theTime BIGINT(20) UNSIGNED, " +
+                    "theTime BIGINT(20), " +
                     "state VARCHAR(10), " +
                     "errorCode VARCHAR(5), " +
                     "errorMessage VARCHAR(255), " +
@@ -228,7 +228,7 @@ final class ExternalDatabase implements Database {
     public Map<String, String> getStatus(final String uuid) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement individualStatement = connection.prepareStatement("SELECT * FROM conversions WHERE uuid = ?;");
-             PreparedStatement customValuesStatement = connection.prepareStatement("SELECT key, value FROM customValues WHERE uuid = ?;")) {
+             PreparedStatement customValuesStatement = connection.prepareStatement("SELECT mapKey, value FROM customValues WHERE uuid = ?;")) {
             individualStatement.setString(1, uuid);
 
             final ResultSet individualResultSet = individualStatement.executeQuery();
@@ -250,7 +250,7 @@ final class ExternalDatabase implements Database {
             }
 
             while (customValuesResultSet.next()) {
-                state.put(customValuesResultSet.getString("key"), customValuesResultSet.getString("value"));
+                state.put(customValuesResultSet.getString("mapKey"), customValuesResultSet.getString("value"));
             }
 
             return state;
@@ -275,7 +275,7 @@ final class ExternalDatabase implements Database {
     @Override
     public Map<String, String> getSettings(final String uuid) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-            PreparedStatement settingsStatement = connection.prepareStatement("SELECT key, value FROM settings WHERE uuid = ?;")) {
+            PreparedStatement settingsStatement = connection.prepareStatement("SELECT mapKey, value FROM settings WHERE uuid = ?;")) {
 
             // Get the hashmaps from the other tables
             settingsStatement.setString(1, uuid);
@@ -284,7 +284,7 @@ final class ExternalDatabase implements Database {
             final HashMap<String, String> settings = new HashMap<>();
 
             while (settingsResultSet.next()) {
-                settings.put(settingsResultSet.getString("key"), settingsResultSet.getString("value"));
+                settings.put(settingsResultSet.getString("mapKey"), settingsResultSet.getString("value"));
             }
 
             return settings;
@@ -294,7 +294,7 @@ final class ExternalDatabase implements Database {
     @Override
     public Map<String, String> getCustomData(final String uuid) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-            PreparedStatement customDataStatement = connection.prepareStatement("SELECT key, value FROM customData WHERE uuid = ?;")) {
+            PreparedStatement customDataStatement = connection.prepareStatement("SELECT mapKey, value FROM customData WHERE uuid = ?;")) {
 
             // Get the hashmaps from the other tables
             customDataStatement.setString(1, uuid);
@@ -303,7 +303,7 @@ final class ExternalDatabase implements Database {
             final HashMap<String, String> customData = new HashMap<>();
 
             while (customDataResultSet.next()) {
-                customData.put(customDataResultSet.getString("key"), customDataResultSet.getString("value"));
+                customData.put(customDataResultSet.getString("mapKey"), customDataResultSet.getString("value"));
             }
 
             return customData;
