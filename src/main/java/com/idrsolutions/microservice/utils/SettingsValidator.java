@@ -1,3 +1,23 @@
+/*
+ * Base Microservice Example
+ *
+ * Project Info: https://github.com/idrsolutions/base-microservice-example
+ *
+ * Copyright 2022 IDRsolutions
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package com.idrsolutions.microservice.utils;
 
 import java.util.Arrays;
@@ -76,9 +96,14 @@ public class SettingsValidator {
         if (paramMap.containsKey(setting)) {
             final String value = paramMap.remove(setting);
 
-            if (!value.isEmpty() && value.matches("-?\\d+(\\.\\d+)?")) {
-                final float fValue = Float.parseFloat(value);
-                if (fValue < range[0] && range[1] < fValue) {
+            if (!value.isEmpty()) {
+                final float fValue;
+                if (value.matches("-?\\d+\\.?(\\d+)?")) {
+                    fValue = Float.parseFloat(value);
+                } else {
+                    fValue = Float.NaN;
+                }
+                if (Float.isNaN(fValue) || (fValue < range[0] || range[1] < fValue)) {
                     errorMessage.append(required ? "Required " : "Optional ").append("setting \"").append(setting)
                             .append("\" has incorrect value. Valid values are between ").append(range[0]).append(" and ")
                             .append(range[1]).append(".\n");

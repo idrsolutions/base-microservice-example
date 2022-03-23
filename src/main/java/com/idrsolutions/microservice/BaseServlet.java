@@ -3,7 +3,7 @@
  *
  * Project Info: https://github.com/idrsolutions/base-microservice-example
  *
- * Copyright 2021 IDRsolutions
+ * Copyright 2022 IDRsolutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Get the time to live of individuals on the server (The duration that the 
+     * Get the time to live of individuals on the server (The duration that the
      * information of an individual is kept on the server)
      *
      * @return individualTTL the time to live of an individual
@@ -119,7 +119,7 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Set the time to live of individuals on the server (The duration that the 
+     * Set the time to live of individuals on the server (The duration that the
      * information of an individual is kept on the server)
      *
      * @param ttlDuration the time to live of an individual
