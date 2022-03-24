@@ -1,6 +1,26 @@
+/*
+ * Base Microservice Example
+ *
+ * Project Info: https://github.com/idrsolutions/base-microservice-example
+ *
+ * Copyright 2022 IDRsolutions
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package com.idrsolutions.microservice.utils;
 
-import com.idrsolutions.microservice.Individual;
+import com.idrsolutions.microservice.db.DBHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,18 +42,18 @@ public class LibreOfficeHelper {
     }
 
     /**
-     * Converts an office file to PDF using LibreOffice.
+     * Converts an office file to PDF using the specified LibreOffice executable.
      *
+     * @param sofficePath The path to the soffice executable
      * @param file The office file to convert to PDF
-     * @param individual The Individual on which to set the error if one occurs
+     * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
      * occurs
      */
-    public static boolean convertToPDF(final File file, final Individual individual) {
-        final String uuid = individual.getUuid();
+    public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
-        final ProcessBuilder pb = new ProcessBuilder("soffice",
+        final ProcessBuilder pb = new ProcessBuilder(sofficePath,
                 "-env:UserInstallation=file://" + uniqueLOProfile,
                 "--headless", "--convert-to", "pdf", file.getName());
 
@@ -43,12 +63,12 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(1, TimeUnit.MINUTES)) {
                 process.destroy();
-                individual.doError(1050, "Libreoffice timed out after 1 minute");
+                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after 1 minute");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
             LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
-            individual.doError(1070, "Internal error processing file");
+            DBHandler.getInstance().setError(uuid, 1070, "Internal error processing file");
             return false;
         } finally {
             FileHelper.deleteFolder(new File(uniqueLOProfile));

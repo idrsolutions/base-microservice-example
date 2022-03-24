@@ -3,7 +3,7 @@
  *
  * Project Info: https://github.com/idrsolutions/base-microservice-example
  *
- * Copyright 2021 IDRsolutions
+ * Copyright 2022 IDRsolutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,7 @@
  */
 package com.idrsolutions.microservice.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -68,6 +65,23 @@ public class ZipHelper {
     }
 
     /**
+     * Zip a folder and all its contents to the destination zip in memory.
+     *
+     * @param srcFolder the source folder to zip
+     * @param createParentDirectoryInZip whether to include a parent directory within the zip file with the same name as the source folder
+     * @return A bytearray containing the zipFile
+     * @throws IOException if there is a problem writing or reading the file
+     */
+    public static byte[] zipFolderInMemory(final String srcFolder, final boolean createParentDirectoryInZip) throws IOException {
+        try (ByteArrayOutputStream zipBAOS = new ByteArrayOutputStream();
+             ZipOutputStream zip = new ZipOutputStream(zipBAOS)) {
+            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
+            zip.flush();
+            return zipBAOS.toByteArray();
+        }
+    }
+
+    /**
      * Zips the given file and writes it to the ZipOuputSream. If directory is
      * given then calls 
      * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
@@ -95,7 +109,7 @@ public class ZipHelper {
     }
 
     /**
-     * Zips the given folder (including all sub files and writes to ZipOutputStream.
+     * Zips the given folder (including all sub files and writes to ZipOutputStream).
      *
      * @param path the current location within the zip file (must include a trailing slash unless the value is empty)
      * @param srcFolder the path of the folder to add to the zip file
