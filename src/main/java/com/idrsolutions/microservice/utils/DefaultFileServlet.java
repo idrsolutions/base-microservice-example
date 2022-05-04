@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -686,9 +687,9 @@ public abstract class DefaultFileServlet extends HttpServlet {
             long size = 0;
 
             while (inputChannel.read(buffer) != -1) {
-                buffer.flip();
+                ((Buffer) buffer).flip();
                 size += outputChannel.write(buffer);
-                buffer.clear();
+                ((Buffer) buffer).clear();
             }
         }
     }
@@ -710,16 +711,16 @@ public abstract class DefaultFileServlet extends HttpServlet {
             return;
         }
 
-        try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(file.toPath(), StandardOpenOption.READ)) {
-            WritableByteChannel outputChannel = Channels.newChannel(output);
+        try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(file.toPath(), StandardOpenOption.READ);
+             WritableByteChannel outputChannel = Channels.newChannel(output)) {
             ByteBuffer buffer = ByteBuffer.allocateDirect(DEFAULT_STREAM_BUFFER_SIZE);
             long size = 0;
 
             while (fileChannel.read(buffer, start + size) != -1) {
-                buffer.flip();
+                ((Buffer) buffer).flip();
 
                 if (size + buffer.limit() > length) {
-                    buffer.limit((int) (length - size));
+                    ((Buffer) buffer).limit((int) (length - size));
                 }
 
                 size += outputChannel.write(buffer);
@@ -728,7 +729,7 @@ public abstract class DefaultFileServlet extends HttpServlet {
                     break;
                 }
 
-                buffer.clear();
+                ((Buffer) buffer).clear();
             }
         }
     }
