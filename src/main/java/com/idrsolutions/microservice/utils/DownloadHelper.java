@@ -18,7 +18,6 @@ package com.idrsolutions.microservice.utils;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.GZIPInputStream;
@@ -43,7 +42,7 @@ public class DownloadHelper {
         final int bufferSize = 1024;
 
         final URL url = new URL(strUrl);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
         con.setRequestProperty("Accept-Encoding", "gzip");
 
