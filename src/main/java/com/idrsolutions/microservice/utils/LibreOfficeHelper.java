@@ -63,7 +63,19 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(1, TimeUnit.MINUTES)) {
                 process.destroy();
-                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after 1 minute");
+                final long fileSize = file.length();
+                final String fileSizeString;
+                if (fileSize < 1_000) {
+                    fileSizeString = fileSize + " bytes";
+                } else {
+                    if (fileSize < 1_000_000) {
+                        fileSizeString = String.format("%.2f KB", (fileSize / 1_000f));
+                    } else {
+                        fileSizeString = String.format("%.2f MB", (fileSize / 1_000_000f));
+                    }
+                }
+                LOG.log(Level.SEVERE, "LibreOffice timed out on " + file.getAbsolutePath() + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
+                DBHandler.getInstance().setError(uuid, 1050, "Maximum conversion duration exceeded.");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
