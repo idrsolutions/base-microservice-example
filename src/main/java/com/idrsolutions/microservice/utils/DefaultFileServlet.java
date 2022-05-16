@@ -111,14 +111,19 @@ import static java.util.logging.Level.FINE;
  * <li><a href="https://stackoverflow.com/q/13588149/157882">How to stream audio/video files such as MP3, MP4, AVI, etc using a Servlet</a>
  * <li><a href="https://stackoverflow.com/a/29991447/157882">Abstract template for a static resource servlet</a>
  * </ul>
- *
+ * <p>
  * This class is a derivative of the OmniFaces FileServlet class.
- *
+ * <p>
  * Modifications made in this version:
- * 1. Inlined imported omnifaces dependencies to make this class fully self-contained
- * 2. Changed package and class name so as not to conflict if used in other projects that include their own version
- * 3. Added a new abstract method {@link #getBasePath()} which defines the location on disk from which to serve files
- * 4. Added a default implementation of {@link #getFile(HttpServletRequest)} which calls {@link #getBasePath()}
+ * <ol>
+ * <li>Inlined imported omnifaces dependencies to make this class fully self-contained
+ * <li>Changed package and class name so as not to conflict if used in other projects that include their own version
+ * <li>Added a new abstract method {@link #getBasePath()} which defines the location on disk from which to serve files
+ * <li>Added a default implementation of {@link #getFile(HttpServletRequest)} which calls {@link #getBasePath()}
+ * <li>Updated ByteBuffer usage in {@link #stream(InputStream, OutputStream)} and {@link #stream(File, OutputStream, long, long)}
+ * to ensure code functions on Java 8 when compiled with a Java version higher than 9
+ * <li>Moved WritableByteChannel into a try-with-resources statement for {@link #stream(File, OutputStream, long, long)}
+ * </ol>
  *
  * @author Bauke Scholtz
  * @since 2.2
