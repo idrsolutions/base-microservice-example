@@ -109,7 +109,7 @@ public class LibreOfficeHelper {
                         fileSizeString = String.format("%.2f MB", (fileSize / 1_000_000f));
                     }
                 }
-                LOG.log(Level.SEVERE, "LibreOffice timed out on " + file.getAbsolutePath() + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
+                LOG.log(Level.SEVERE, "LibreOffice timed out on " + uuid + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
                 return 1050;
             }
         } catch (final IOException | InterruptedException e) {
