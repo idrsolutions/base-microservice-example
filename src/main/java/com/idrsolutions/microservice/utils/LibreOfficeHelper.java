@@ -63,19 +63,7 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(1, TimeUnit.MINUTES)) {
                 process.destroy();
-                final long fileSize = file.length();
-                final String fileSizeString;
-                if (fileSize < 1_000) {
-                    fileSizeString = fileSize + " bytes";
-                } else {
-                    if (fileSize < 1_000_000) {
-                        fileSizeString = String.format("%.2f KB", (fileSize / 1_000f));
-                    } else {
-                        fileSizeString = String.format("%.2f MB", (fileSize / 1_000_000f));
-                    }
-                }
-                LOG.log(Level.SEVERE, "LibreOffice timed out on " + file.getAbsolutePath() + " with filesize: " + fileSizeString);
-                DBHandler.getInstance().setError(uuid, 1050, "Maximum conversion duration exceeded.");
+                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after 1 minute");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
@@ -88,4 +76,48 @@ public class LibreOfficeHelper {
         return true;
     }
 
+    /**
+     * Converts an office file to PDF using the specified LibreOffice executable.
+     *
+     * @param sofficePath The path to the soffice executable
+     * @param file The office file to convert to PDF
+     * @param uuid The uuid of the conversion on which to set the error if one occurs
+     * @return 0 if successful, 1050 if libreoffice timed out, or 1070 if libreoffice has an internal error
+     * occurs
+     */
+    public static int convertDocToPDF(final String sofficePath, final File file, final String uuid) {
+        final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
+
+        final ProcessBuilder pb = new ProcessBuilder(sofficePath,
+                "-env:UserInstallation=file://" + uniqueLOProfile,
+                "--headless", "--convert-to", "pdf", file.getName());
+
+        pb.directory(new File(file.getParent()));
+
+        try {
+            final Process process = pb.start();
+            if (!process.waitFor(1, TimeUnit.MINUTES)) {
+                process.destroy();
+                final long fileSize = file.length();
+                final String fileSizeString;
+                if (fileSize < 1_000) {
+                    fileSizeString = fileSize + " bytes";
+                } else {
+                    if (fileSize < 1_000_000) {
+                        fileSizeString = String.format("%.2f KB", (fileSize / 1_000f));
+                    } else {
+                        fileSizeString = String.format("%.2f MB", (fileSize / 1_000_000f));
+                    }
+                }
+                LOG.log(Level.SEVERE, "LibreOffice timed out on " + file.getAbsolutePath() + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
+                return 1050;
+            }
+        } catch (final IOException | InterruptedException e) {
+            LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
+            return 1070;
+        } finally {
+            FileHelper.deleteFolder(new File(uniqueLOProfile));
+        }
+        return 0;
+    }
 }
