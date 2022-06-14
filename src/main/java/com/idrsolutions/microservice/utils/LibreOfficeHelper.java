@@ -30,6 +30,17 @@ import java.util.logging.Logger;
 
 public class LibreOfficeHelper {
 
+    public enum Result { SUCCESS(0), TIMEOUT(1050), ERROR(1070);
+        final int code;
+        Result(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(LibreOfficeHelper.class.getName());
     private static final String TEMP_DIR;
 
@@ -85,7 +96,7 @@ public class LibreOfficeHelper {
      * @return 0 if successful, 1050 if libreoffice timed out, or 1070 if libreoffice has an internal error
      * occurs
      */
-    public static int convertDocToPDF(final String sofficePath, final File file, final String uuid) {
+    public static Result convertDocToPDF(final String sofficePath, final File file, final String uuid) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final ProcessBuilder pb = new ProcessBuilder(sofficePath,
@@ -110,14 +121,14 @@ public class LibreOfficeHelper {
                     }
                 }
                 LOG.log(Level.SEVERE, "LibreOffice timed out on " + uuid + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
-                return 1050;
+                return Result.TIMEOUT;
             }
         } catch (final IOException | InterruptedException e) {
             LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
-            return 1070;
+            return Result.ERROR;
         } finally {
             FileHelper.deleteFolder(new File(uniqueLOProfile));
         }
-        return 0;
+        return Result.SUCCESS;
     }
 }
