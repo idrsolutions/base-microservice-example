@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.zip.GZIPInputStream;
 import javax.naming.SizeLimitExceededException;
 
 /**
@@ -41,7 +42,16 @@ public class DownloadHelper {
         final int bufferSize = 1024;
 
         final URL url = new URL(strUrl);
-        final BufferedInputStream input = new BufferedInputStream(url.openStream());
+        final HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+        con.setRequestProperty("Accept-Encoding", "gzip");
+
+        final BufferedInputStream input = new BufferedInputStream(
+                "gzip".equals(con.getContentEncoding())
+                    ? new GZIPInputStream(con.getInputStream())
+                    : con.getInputStream()
+        );
+
         final ByteArrayOutputStream data = new ByteArrayOutputStream();
 
         final byte[] buffer = new byte[bufferSize];

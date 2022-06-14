@@ -54,7 +54,7 @@ public class LibreOfficeHelper {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final ProcessBuilder pb = new ProcessBuilder(sofficePath,
-                "-env:UserInstallation=file:///" + uniqueLOProfile,
+                "-env:UserInstallation=file:///" + uniqueLOProfile + '/',
                 "--headless", "--convert-to", "pdf", file.getName());
 
         pb.directory(new File(file.getParent()));
