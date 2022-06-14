@@ -75,7 +75,7 @@ public class LibreOfficeHelper {
             final Process process = pb.start();
             if (!process.waitFor(timeoutDuration, TimeUnit.MILLISECONDS)) {
                 process.destroy();
-                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after 1 minute");
+                DBHandler.getInstance().setError(uuid, 1050, "Libreoffice timed out after " + timeoutDuration + " milliseconds");
                 return false;
             }
         } catch (final IOException | InterruptedException e) {
