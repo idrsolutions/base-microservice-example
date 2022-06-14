@@ -30,8 +30,13 @@ import java.util.logging.Logger;
 
 public class LibreOfficeHelper {
 
-    public enum Result { SUCCESS(0), TIMEOUT(1050), ERROR(1070);
+    public enum Result {
+        SUCCESS(0),
+        TIMEOUT(1050),
+        ERROR(1070);
+
         final int code;
+
         Result(int code) {
             this.code = code;
         }
