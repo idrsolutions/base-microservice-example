@@ -48,7 +48,6 @@ public class LibreOfficeHelper {
      * @param file The office file to convert to PDF
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
-     * occurs
      */
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
         return convertToPDF(sofficePath, file, uuid, 60000);
@@ -62,7 +61,6 @@ public class LibreOfficeHelper {
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @param timeoutDuration The timeout duration for libreoffice conversions in milliseconds
      * @return true on success, false on failure
-     * occurs
      */
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
