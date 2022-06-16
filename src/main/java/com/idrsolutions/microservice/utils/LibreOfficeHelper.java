@@ -104,16 +104,12 @@ public class LibreOfficeHelper {
     }
 
     private static String getFileSizeAsString(final long fileSize) {
-        final String fileSizeString;
         if (fileSize < 1_000) {
-            fileSizeString = fileSize + " bytes";
+            return fileSize + " bytes";
+        } else if (fileSize < 1_000_000) {
+            return String.format("%.2f KB", (fileSize / 1_000f));
         } else {
-            if (fileSize < 1_000_000) {
-                fileSizeString = String.format("%.2f KB", (fileSize / 1_000f));
-            } else {
-                fileSizeString = String.format("%.2f MB", (fileSize / 1_000_000f));
-            }
+            return String.format("%.2f MB", (fileSize / 1_000_000f));
         }
-        return fileSizeString;
     }
 }
