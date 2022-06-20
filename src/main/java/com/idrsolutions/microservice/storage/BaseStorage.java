@@ -10,7 +10,10 @@ import java.util.logging.Logger;
  */
 public abstract class BaseStorage implements Storage {
     protected static final Logger LOG = Logger.getLogger(BaseStorage.class.getName());
-    
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String put(final File fileToUpload, final String fileName, final String uuid) {
         try (FileInputStream fileStream = new FileInputStream(fileToUpload)) {

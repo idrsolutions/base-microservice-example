@@ -44,6 +44,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     public static final String KEY_PROPERTIES = "properties";
     public static final String KEY_PROPERTY_LIBRE_OFFICE = "libreOfficePath";
+    public static final String KEY_PROPERTY_LIBRE_OFFICE_TIMEOUT = "libreOfficeTimeout";
     public static final String KEY_PROPERTY_CONVERSION_COUNT = "conversionThreadCount";
     public static final String KEY_PROPERTY_DOWNLOAD_COUNT = "downloadThreadCount";
     public static final String KEY_PROPERTY_CALLBACK_COUNT = "callbackThreadCount";
