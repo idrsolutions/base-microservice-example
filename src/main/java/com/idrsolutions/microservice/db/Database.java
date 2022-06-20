@@ -28,7 +28,7 @@ public interface Database {
     /**
      * Initialises the conversion in the database
      * @param uuid The uuid of the conversion
-     * @param callbackUrl
+     * @param callbackUrl The callback url for the conversion
      * @param customData Custom data for the conversion
      * @param settings Settings for the conversion
      */

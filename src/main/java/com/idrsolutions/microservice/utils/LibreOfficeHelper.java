@@ -66,7 +66,7 @@ public class LibreOfficeHelper {
      * @return true on success, false on failure
      */
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
-        return convertDocToPDF(sofficePath, file, uuid) == Result.SUCCESS;
+        return convertDocToPDF(sofficePath, file, uuid, 60000) == Result.SUCCESS;
     }
 
     /**
@@ -77,7 +77,7 @@ public class LibreOfficeHelper {
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return Result enum value depending on the conversion result
      */
-    public static Result convertDocToPDF(final String sofficePath, final File file, final String uuid) {
+    public static Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final ProcessBuilder pb = new ProcessBuilder(sofficePath,
@@ -88,7 +88,7 @@ public class LibreOfficeHelper {
 
         try {
             final Process process = pb.start();
-            if (!process.waitFor(1, TimeUnit.MINUTES)) {
+            if (!process.waitFor(timeoutDuration, TimeUnit.MILLISECONDS)) {
                 process.destroy();
                 final String fileSizeString = getFileSizeAsString(file.length());
                 LOG.log(Level.SEVERE, "LibreOffice timed out on " + uuid + " with filesize: " + fileSizeString); // soffice location may need to be added to the path

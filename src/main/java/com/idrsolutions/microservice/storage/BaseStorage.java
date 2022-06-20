@@ -12,7 +12,7 @@ public abstract class BaseStorage implements Storage {
     protected static final Logger LOG = Logger.getLogger(BaseStorage.class.getName());
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public String put(final File fileToUpload, final String fileName, final String uuid) {
