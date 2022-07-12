@@ -174,7 +174,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         final int filenameCap = iFilePathLimit - longestPath;
         if (filenameCap < 1) {
             final String message = "The \"filePathLimit\" must be large enough to cover the longest of the \"inputPath\"/\"outputPath\" (" + longestPath + "), uuid (37), preview output (19), and the filename (at least 1). The value must be at least " + (longestPath + 37 + 19 + 1) + ", but 250 is recommended for compatibility across platforms.";
-            LOG.log(Level.WARNING, message);
+            LOG.log(Level.SEVERE, message);
             throw new IllegalArgumentException(message);
         } else {
             properties.setProperty(KEY_PROPERTY_INTERNAL_FILENAME_LIMIT, Integer.toString(filenameCap));
