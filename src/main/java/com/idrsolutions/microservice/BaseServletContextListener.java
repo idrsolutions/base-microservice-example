@@ -21,7 +21,6 @@
 package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.db.DBHandler;
-import com.idrsolutions.microservice.db.Database;
 import com.idrsolutions.microservice.storage.Storage;
 import com.idrsolutions.microservice.utils.FileDeletionService;
 
@@ -43,6 +42,8 @@ import java.util.logging.Logger;
 public abstract class BaseServletContextListener implements ServletContextListener {
 
     public static final String KEY_PROPERTIES = "properties";
+    public static final String KEY_PROPERTY_FILEPATH_LIMIT = "filePathLimit";
+    public static final String KEY_PROPERTY_INTERNAL_FILENAME_LIMIT = "filenameLimit";
     public static final String KEY_PROPERTY_LIBRE_OFFICE = "libreOfficePath";
     public static final String KEY_PROPERTY_LIBRE_OFFICE_TIMEOUT = "libreOfficeTimeout";
     public static final String KEY_PROPERTY_CONVERSION_COUNT = "conversionThreadCount";
@@ -150,7 +151,32 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateIndividualTTL(propertiesFile);
         validateFileDeletionService(propertiesFile);
         validateFileDeletionServiceFrequency(propertiesFile);
+        validateFilePathLimit(propertiesFile); //Ensure this is done after input and output path are validated.
     }
+
+
+    private static void validateFilePathLimit(final Properties properties) throws IllegalArgumentException {
+        final String filePathLimit = properties.getProperty(KEY_PROPERTY_FILEPATH_LIMIT);
+        if (filePathLimit == null || filePathLimit.isEmpty() || !filePathLimit.matches("\\d+") || Integer.parseInt(filePathLimit) == 0) {
+            properties.setProperty(KEY_PROPERTY_FILEPATH_LIMIT, "250");
+            final String message = String.format("Properties value for \"filePathLimit\" was set to \"%s\" but should be a positive integer. Using a value of 250.", filePathLimit);
+            LOG.log(Level.WARNING, message);
+        }
+
+        final int iFilePathLimit = Integer.parseInt(properties.getProperty(BaseServletContextListener.KEY_PROPERTY_FILEPATH_LIMIT));
+        final int outputPath = properties.getProperty(KEY_PROPERTY_OUTPUT_PATH).length();
+        final int inputPath = properties.getProperty(KEY_PROPERTY_INPUT_PATH).length();
+        final int longestPath = Math.max(outputPath, inputPath);
+        final int filenameCap = iFilePathLimit - 19 - 37 - longestPath;
+        if (filenameCap < 1) {
+            final String message = "The \"filePathLimit\" must be large enough to cover the longest of the \"inputPath\"/\"outputPath\" (" + longestPath + "), uuid (37), preview output (19), and the filename (at least 1). The value must be at least " + (longestPath + 37 + 19 + 1) + ", but 250 is recommended for compatibility across platforms.";
+            LOG.log(Level.WARNING, message);
+            throw new IllegalArgumentException(message);
+        } else {
+            properties.setProperty(KEY_PROPERTY_INTERNAL_FILENAME_LIMIT, Integer.toString(filenameCap));
+        }
+    }
+
 
     private static void validateConversionThreadCount(final Properties properties) {
         final String conversonThreads = properties.getProperty(KEY_PROPERTY_CONVERSION_COUNT);
@@ -200,7 +226,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private void validateOutputPath(final Properties properties) {
         final String outputPath = properties.getProperty(KEY_PROPERTY_OUTPUT_PATH);
         if (outputPath == null || outputPath.isEmpty()) {
-            final String outputDir = getConfigPath() + "output";
+            final String outputDir = getConfigPath() + "output/";
             properties.setProperty(KEY_PROPERTY_OUTPUT_PATH, outputDir);
             final String message = String.format("Properties value for \"outputPath\" was not set. Using a value of \"%s\"", outputDir);
             LOG.log(Level.WARNING, message);

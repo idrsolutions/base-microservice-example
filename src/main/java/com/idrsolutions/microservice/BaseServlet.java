@@ -30,6 +30,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonParser;
 import javax.json.stream.JsonParsingException;
 import javax.naming.SizeLimitExceededException;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,10 +38,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -307,6 +308,25 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
+     * Cap the filename to fit the specified file path limit.
+     * @param fileName name of the file uploaded
+     * @param context the ServletContext with access to the properties object
+     * @return String representing the filename beyond a given point removed to keep files within the file path limit
+     */
+    private static String capFileName(final String fileName, final ServletContext context) {
+        final Properties properties = (Properties) context.getAttribute(BaseServletContextListener.KEY_PROPERTIES);
+        final int filePathLimit = Integer.parseInt(properties.getProperty(BaseServletContextListener.KEY_PROPERTY_INTERNAL_FILENAME_LIMIT));
+
+        final String ext = fileName.substring(fileName.lastIndexOf(".") + 1);
+        String fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
+        if (filePathLimit < fileNameWithoutExt.length()) {
+            return fileNameWithoutExt.substring(0, filePathLimit) + '.' + ext;
+        }
+
+        return fileName;
+    }
+
+    /**
      * Create the input directory for the clients file.
      *
      * @param uuid the uuid to use to create the directory
@@ -556,8 +576,12 @@ public abstract class BaseServlet extends HttpServlet {
      * @throws IOException on file not being writable
      */
     private File outputFile(final String filename, final String uuid, final byte[] fileBytes) throws IOException {
+
         final File inputDir = createInputDirectory(uuid);
-        final File inputFile = new File(inputDir, sanitizeFileName(filename));
+
+        final String cappedFileName = capFileName(filename, getServletContext());
+
+        final File inputFile = new File(inputDir, sanitizeFileName(cappedFileName));
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
