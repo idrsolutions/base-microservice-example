@@ -30,7 +30,6 @@ import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonParser;
 import javax.json.stream.JsonParsingException;
 import javax.naming.SizeLimitExceededException;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -310,12 +309,10 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Cap the filename to fit the specified file path limit.
      * @param fileName name of the file uploaded
-     * @param context the ServletContext with access to the properties object
+     * @param filePathLimit the maximum file path length before it is capped
      * @return String representing the filename beyond a given point removed to keep files within the file path limit
      */
-    private static String capFileName(final String fileName, final ServletContext context) {
-        final Properties properties = (Properties) context.getAttribute(BaseServletContextListener.KEY_PROPERTIES);
-        final int filePathLimit = Integer.parseInt(properties.getProperty(BaseServletContextListener.KEY_PROPERTY_INTERNAL_FILENAME_LIMIT));
+    private static String capFileName(final String fileName, final int filePathLimit) {
 
         final String ext = fileName.substring(fileName.lastIndexOf(".") + 1);
         String fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
@@ -579,7 +576,10 @@ public abstract class BaseServlet extends HttpServlet {
 
         final File inputDir = createInputDirectory(uuid);
 
-        final String cappedFileName = capFileName(filename, getServletContext());
+        final Properties properties = (Properties) getServletContext().getAttribute(BaseServletContextListener.KEY_PROPERTIES);
+        final int filePathLimit = Integer.parseInt(properties.getProperty(BaseServletContextListener.KEY_PROPERTY_INTERNAL_FILENAME_LIMIT));
+
+        final String cappedFileName = capFileName(filename, filePathLimit);
 
         final File inputFile = new File(inputDir, sanitizeFileName(cappedFileName));
 

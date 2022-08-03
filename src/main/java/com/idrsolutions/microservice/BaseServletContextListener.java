@@ -173,7 +173,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         final int filenameCap = iFilePathLimit - longestPath;
         if (filenameCap < 1) {
-            final String message = "The \"filePathLimit\" must be large enough to cover the longest of the \"inputPath\"/\"outputPath\" (" + longestPath + "), uuid (37), preview output (19), and the filename (at least 1). The value must be at least " + (longestPath + 37 + 19 + 1) + ", but 250 is recommended for compatibility across platforms.";
+            final String message = "The \"filePathLimit\" must be large enough to cover the longest of the \"inputPath\"/\"outputPath\" (" + longestPath + "), uuid (" + uuidLength + "), preview output (" + previewLength + "), and the filename (at least 1). The value must be at least " + (longestPath + uuidLength + previewLength + 1) + ", but 250 is recommended for compatibility across platforms.";
             LOG.log(Level.SEVERE, message);
             throw new IllegalArgumentException(message);
         } else {
@@ -230,7 +230,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     private void validateOutputPath(final Properties properties) {
         final String outputPath = properties.getProperty(KEY_PROPERTY_OUTPUT_PATH);
         if (outputPath == null || outputPath.isEmpty()) {
-            final String outputDir = getConfigPath() + "output/";
+            final String outputDir = getConfigPath() + "output";
             properties.setProperty(KEY_PROPERTY_OUTPUT_PATH, outputDir);
             final String message = String.format("Properties value for \"outputPath\" was not set. Using a value of \"%s\"", outputDir);
             LOG.log(Level.WARNING, message);
