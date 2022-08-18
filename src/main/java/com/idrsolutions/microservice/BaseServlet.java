@@ -381,6 +381,11 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
+        if (originalFileName.getBytes().length > 255) {
+            doError(request, response, "Filename is too large", 400);
+            return false;
+        }
+
         if (originalFileName.indexOf('.') == -1) {
             doError(request, response, "File has no extension", 400);
             return false;
