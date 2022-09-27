@@ -37,6 +37,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -563,6 +565,12 @@ public abstract class BaseServlet extends HttpServlet {
     private File outputFile(final String filename, final String uuid, final byte[] fileBytes) throws IOException {
         final File inputDir = createInputDirectory(uuid);
         final File inputFile = new File(inputDir, sanitizeFileName(filename));
+
+        //Prevent path traversal by providing file names containing double periods
+        Path normalizedPath = Paths.get(inputFile.getAbsolutePath()).normalize();
+        if (!normalizedPath.startsWith(inputDir.getAbsolutePath())) {
+            throw new IOException("Illegal filename provided: " + filename);
+        }
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
