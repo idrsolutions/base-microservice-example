@@ -28,6 +28,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -235,7 +237,16 @@ public abstract class DefaultFileServlet extends HttpServlet {
             pathInfo += "index.html";
         }
 
-        return new File(getBasePath(), pathInfo);
+        final String basePath = getBasePath();
+
+        //Prevent path traversal by providing file names containing double periods
+        Path normalizedPath = Paths.get(basePath, pathInfo).normalize();
+        if (!normalizedPath.startsWith(basePath)) {
+            throw new IllegalArgumentException("Illegal path provided: " + pathInfo);
+        }
+
+
+        return new File(basePath, pathInfo);
     }
 
     /**
