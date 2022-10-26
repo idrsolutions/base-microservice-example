@@ -54,13 +54,18 @@ public class FileDeletionService {
 
                 final long timeToDelete = currentTime - fileLifeSpan;
                 for (final String dir : dirs) {
-                    final File fileDir = new File(dir);
-                    final File[] files = fileDir.listFiles();
+                    try {
+                        final File fileDir = new File(dir);
+                        final File[] files = fileDir.listFiles();
 
-                    if (fileDir.exists() && files != null) {
-                        Arrays.stream(files)
-                                .filter(file -> file.lastModified() < timeToDelete)
-                                .forEach(FileDeletionService::deleteFile);
+                        if (fileDir.exists() && files != null) {
+                            Arrays.stream(files)
+                                    .filter(file -> file.lastModified() < timeToDelete)
+                                    .forEach(FileDeletionService::deleteFile);
+                        }
+                    } catch (final Throwable e) {
+                        final String message = String.format("Exception thrown whilst FileDeletionService was scanning (%s)", dir);
+                        LOG.log(Level.WARNING, message, e);
                     }
                 }
             }
@@ -86,7 +91,7 @@ public class FileDeletionService {
                             LOG.log(Level.WARNING, message, e);
                         }
                     });
-        } catch (final IOException e) {
+        } catch (final Throwable e) {
             final String message = String.format("Exception thrown when trying to delete file (%s)", file.getAbsolutePath());
             LOG.log(Level.WARNING, message, e);
         }
