@@ -1,13 +1,17 @@
 package com.idrsolutions.microservice.utils;
 
+import com.idrsolutions.microservice.db.DBHandler;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +64,19 @@ public class FileDeletionService {
 
                         if (fileDir.exists() && files != null) {
                             Arrays.stream(files)
-                                    .filter(file -> file.lastModified() < timeToDelete)
+                                    .filter(file -> {
+                                        final long lastModified = getLastModified(file);
+                                        return lastModified < timeToDelete;
+                                    })
+                                    .filter(file -> {
+                                        try {
+                                            final Map<String, String> status = DBHandler.getInstance().getStatus(file.getName());
+                                            return status == null || "processed".equals(status.get("state"));
+                                        } catch (SQLException e) {
+                                            e.printStackTrace();
+                                        }
+                                        return false;
+                                    })
                                     .forEach(FileDeletionService::deleteFile);
                         }
                     } catch (final Throwable e) {
@@ -72,6 +88,28 @@ public class FileDeletionService {
         };
         scheduledExecutorService.scheduleAtFixedRate(deleteFiles, 0, frequency, TimeUnit.MINUTES);
     }
+
+    private static long getLastModified(final File file) {
+        long lastModified = file.lastModified();
+        if (file.isDirectory()) {
+            final File[] files = file.listFiles();
+            if (files != null && files.length > 0) {
+                for (final File child : files) {
+                    final long childLastModified;
+                    if (child.isDirectory()) {
+                        childLastModified = getLastModified(child);
+                    } else {
+                        childLastModified = child.lastModified();
+                    }
+                    if (lastModified < childLastModified) {
+                        lastModified = childLastModified;
+                    }
+                }
+            }
+        }
+        return lastModified;
+    }
+
 
     /**
      * Static method to delete the provided file
