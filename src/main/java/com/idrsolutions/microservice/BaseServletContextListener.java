@@ -246,11 +246,17 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
     private static void validateMaxConversionDuration(final Properties properties) {
         final String maxDuration = properties.getProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION);
-        if (maxDuration == null || maxDuration.isEmpty() || "0".equals(maxDuration) || !maxDuration.matches("\\d+")) {
+        if (maxDuration == null || maxDuration.isEmpty() || "0".equals(maxDuration) || !(maxDuration.matches("\\d+") || "Infinity".equals(maxDuration))) {
             properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
             final String message = String.format("Properties value for \"maxConversionDuration\" was set to " +
-                    "\"%s\" but should be a positive long. Using a value of Infinity.", maxDuration);
+                    "\"%s\" but should be a positive long or Infinity. Using a value of Infinity.", maxDuration);
             LOG.log(Level.WARNING, message);
+            return;
+        }
+        if ("Infinity".equals(maxDuration)) {
+            properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
+            final String message = String.format("Interpreting \"Infinity\" as %d", Long.MAX_VALUE);
+            LOG.log(Level.INFO, message);
         }
     }
 }
