@@ -69,11 +69,13 @@ public class FileDeletionService {
                                         return lastModified < timeToDelete;
                                     })
                                     .filter(file -> {
+                                        final String uuidFromFileName = file.getName();
                                         try {
-                                            final Map<String, String> status = DBHandler.getInstance().getStatus(file.getName());
+                                            final Map<String, String> status = DBHandler.getInstance().getStatus(uuidFromFileName);
                                             return status == null || "processed".equals(status.get("state"));
                                         } catch (SQLException e) {
-                                            e.printStackTrace();
+                                            final String message = String.format("Error finding status for conversion (%s)", uuidFromFileName);
+                                            LOG.log(Level.WARNING, message, e);
                                         }
                                         return false;
                                     })
