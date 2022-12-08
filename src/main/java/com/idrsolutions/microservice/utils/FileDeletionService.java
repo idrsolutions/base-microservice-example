@@ -1,13 +1,17 @@
 package com.idrsolutions.microservice.utils;
 
+import com.idrsolutions.microservice.db.DBHandler;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -54,19 +58,60 @@ public class FileDeletionService {
 
                 final long timeToDelete = currentTime - fileLifeSpan;
                 for (final String dir : dirs) {
-                    final File fileDir = new File(dir);
-                    final File[] files = fileDir.listFiles();
+                    try {
+                        final File fileDir = new File(dir);
+                        final File[] files = fileDir.listFiles();
 
-                    if (fileDir.exists() && files != null) {
-                        Arrays.stream(files)
-                                .filter(file -> file.lastModified() < timeToDelete)
-                                .forEach(FileDeletionService::deleteFile);
+                        if (fileDir.exists() && files != null) {
+                            Arrays.stream(files)
+                                    .filter(file -> {
+                                        final long lastModified = getLastModified(file);
+                                        return lastModified < timeToDelete;
+                                    })
+                                    .filter(file -> {
+                                        final String uuidFromFileName = file.getName();
+                                        try {
+                                            final Map<String, String> status = DBHandler.getInstance().getStatus(uuidFromFileName);
+                                            return status == null || "processed".equals(status.get("state"));
+                                        } catch (SQLException e) {
+                                            final String message = String.format("Error finding status for conversion (%s)", uuidFromFileName);
+                                            LOG.log(Level.WARNING, message, e);
+                                        }
+                                        return false;
+                                    })
+                                    .forEach(FileDeletionService::deleteFile);
+                        }
+                    } catch (final Throwable e) {
+                        final String message = String.format("Exception thrown whilst FileDeletionService was scanning (%s)", dir);
+                        LOG.log(Level.WARNING, message, e);
                     }
                 }
             }
         };
         scheduledExecutorService.scheduleAtFixedRate(deleteFiles, 0, frequency, TimeUnit.MINUTES);
     }
+
+    private static long getLastModified(final File file) {
+        long lastModified = file.lastModified();
+        if (file.isDirectory()) {
+            final File[] files = file.listFiles();
+            if (files != null && files.length > 0) {
+                for (final File child : files) {
+                    final long childLastModified;
+                    if (child.isDirectory()) {
+                        childLastModified = getLastModified(child);
+                    } else {
+                        childLastModified = child.lastModified();
+                    }
+                    if (lastModified < childLastModified) {
+                        lastModified = childLastModified;
+                    }
+                }
+            }
+        }
+        return lastModified;
+    }
+
 
     /**
      * Static method to delete the provided file
@@ -86,7 +131,7 @@ public class FileDeletionService {
                             LOG.log(Level.WARNING, message, e);
                         }
                     });
-        } catch (final IOException e) {
+        } catch (final Throwable e) {
             final String message = String.format("Exception thrown when trying to delete file (%s)", file.getAbsolutePath());
             LOG.log(Level.WARNING, message, e);
         }
