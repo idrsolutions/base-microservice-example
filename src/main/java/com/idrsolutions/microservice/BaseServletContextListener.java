@@ -53,6 +53,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_INDIVIDUAL_TTL = "individualTTL";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
+    public static final String KEY_PROPERTY_MAX_CONVERSION_DURATION = "maxConversionDuration";
 
     private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
 
@@ -150,6 +151,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateIndividualTTL(propertiesFile);
         validateFileDeletionService(propertiesFile);
         validateFileDeletionServiceFrequency(propertiesFile);
+        validateMaxConversionDuration(propertiesFile);
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
@@ -239,6 +241,21 @@ public abstract class BaseServletContextListener implements ServletContextListen
             final String message = String.format("Properties value for \"fileDeletionService.frequency\" was set to " +
                     "\"%s\" but should be a positive long. Using a value of 5 Minutes.", fdsFrequency);
             LOG.log(Level.WARNING, message);
+        }
+    }
+
+    private static void validateMaxConversionDuration(final Properties properties) {
+        final String maxDuration = properties.getProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION);
+        if (maxDuration == null || maxDuration.isEmpty() || "0".equals(maxDuration)
+                || (!maxDuration.matches("\\d+") && !"Infinity".equals(maxDuration))) {
+            properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
+            final String message = String.format("Properties value for \"maxConversionDuration\" was set to " +
+                    "\"%s\" but should be a positive long or Infinity. Using a value of Infinity.", maxDuration);
+            LOG.log(Level.WARNING, message);
+        } else if ("Infinity".equals(maxDuration)) {
+            properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
+            final String message = String.format("Interpreting \"Infinity\" as %d", Long.MAX_VALUE);
+            LOG.log(Level.INFO, message);
         }
     }
 }
