@@ -127,8 +127,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
             ));
         }
 
-        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
-        DBHandler.initialise();
+        initialiseDatabase(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
     }
 
     @Override
@@ -258,4 +257,19 @@ public abstract class BaseServletContextListener implements ServletContextListen
             LOG.log(Level.INFO, message);
         }
     }
+
+
+    private void initialiseDatabase(final String jndi) {
+        if (jndi == null || jndi.isEmpty()) {
+            final String message = "It is recommended to set your own database instead of using the default internal database as it will allow you to more easily scale the service in the future.\n" +
+                    "More details on the benefits and how to do this can be found here https://support.idrsolutions.com/buildvu/tutorials/cloud/options/external-state-database";
+            LOG.log(Level.WARNING, message);
+        } else {
+            DBHandler.setDatabaseJNDIName(jndi);
+        }
+
+
+        DBHandler.initialise();
+    }
+
 }
