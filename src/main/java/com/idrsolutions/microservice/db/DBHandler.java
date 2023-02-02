@@ -31,9 +31,16 @@ public abstract class DBHandler {
 
     private static String databaseJNDIName;
 
+    private static boolean usingMemoryDatabase = true;
+
+    public static boolean isUsingMemoryDatabase() {
+        return usingMemoryDatabase;
+    }
+
     public static void initialise() {
         final DataSource dataSource = setupDatasource();
-        INSTANCE = dataSource != null ? new ExternalDatabase(dataSource) : new MemoryDatabase();
+        usingMemoryDatabase = dataSource == null;
+        INSTANCE = usingMemoryDatabase ? new MemoryDatabase() : new ExternalDatabase(dataSource);
     }
 
     public static Database getInstance() {
