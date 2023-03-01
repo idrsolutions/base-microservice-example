@@ -21,7 +21,6 @@
 package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.db.DBHandler;
-import com.idrsolutions.microservice.db.Database;
 import com.idrsolutions.microservice.storage.Storage;
 import com.idrsolutions.microservice.utils.FileDeletionService;
 
