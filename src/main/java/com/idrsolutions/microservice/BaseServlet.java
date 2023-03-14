@@ -288,33 +288,12 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Sanitize the file name by removing all non filepath friendly characters.
-     *
-     * Allow only characters valid across all (most) platforms.
-     * Note that this does not cover all reserved filenames on Windows (E.g. CON, COM1, LTP1, etc), therefore it
-     * remains possible for a user to pass a file that cannot be stored if the server is running on Windows.
-     *
-     * The space character is also currently replaced with an underscore because file names that consist only of
-     * spaces and file paths that end with spaces are not allowed on Windows.
-     *
-     * More info: https://stackoverflow.com/a/31976060
-     *
-     * @param fileName the filename to sanitize
-     * @return the sanitized filename
-     */
-    private static String sanitizeFileName(final String fileName) {
-        return fileName.replaceAll("[\\\\/:\"*?<>| \\p{Cc}]", "_");
-    }
-
-    /**
      * Create the input directory for the clients file.
      *
-     * @param uuid the uuid to use to create the directory
      * @return the input directory
      */
-    private static File createInputDirectory(final String uuid) {
-        final String userInputDirPath = INPUTPATH + uuid;
-        final File inputDir = new File(userInputDirPath);
+    private static File createInputDirectory() {
+        final File inputDir = new File(INPUTPATH);
         if (!inputDir.exists()) {
             inputDir.mkdirs();
         }
@@ -324,12 +303,10 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Create the output directory to store the converted pdf at.
      *
-     * @param uuid the uuid to use to create the output directory
      * @return the output directory
      */
-    private static File createOutputDirectory(final String uuid) {
-        final String userOutputDirPath = OUTPUTPATH + uuid;
-        final File outputDir = new File(userOutputDirPath);
+    private static File createOutputDirectory() {
+        final File outputDir = new File(OUTPUTPATH);
         if (outputDir.exists()) {
             FileHelper.deleteFolder(outputDir);
         }
@@ -397,14 +374,14 @@ public abstract class BaseServlet extends HttpServlet {
             final byte[] fileBytes = new byte[(int) filePart.getSize()];
             fileContent.read(fileBytes);
             fileContent.close();
-            inputFile = outputFile(originalFileName, uuid, fileBytes);
+            inputFile = outputFile(uuid + originalFileName.substring(originalFileName.lastIndexOf('.')), fileBytes);
         } catch (final IOException e) {
             LOG.log(Level.SEVERE, "IOException when reading an uploaded file", e);
             doError(request, response, "Internal error", 500); // Failed to save file to disk
             return false;
         }
 
-        final File outputDir = createOutputDirectory(uuid);
+        final File outputDir = createOutputDirectory();
 
         final String[] rawParam = params.get("callbackUrl");
         final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
@@ -487,14 +464,14 @@ public abstract class BaseServlet extends HttpServlet {
             File inputFile = null;
             try {
                 final byte[] fileBytes = DownloadHelper.getFileFromUrl(url, NUM_DOWNLOAD_RETRIES, fileSizeLimit);
-                inputFile = outputFile(finalFilename, uuid, fileBytes);
+                inputFile = outputFile(uuid + finalFilename.substring(finalFilename.lastIndexOf('.')), fileBytes);
             } catch (IOException e) {
                 DBHandler.getInstance().setError(uuid, 1200, "Could not get file from URL");
             } catch (SizeLimitExceededException e) {
                 DBHandler.getInstance().setError(uuid, 1210, "File exceeds file size limit");
             }
 
-            final File outputDir = createOutputDirectory(uuid);
+            final File outputDir = createOutputDirectory();
             addToQueue(uuid, inputFile, outputDir, contextUrl);
         });
 
@@ -554,15 +531,13 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Write the given file bytes to the output directory under filename.
      *
-     * @param filename the filename to output to
      * @param uuid the uuid of the conversion request
      * @param fileBytes the bytes to be written.
      * @return the created file
      * @throws IOException on file not being writable
      */
-    private File outputFile(final String filename, final String uuid, final byte[] fileBytes) throws IOException {
-        final File inputDir = createInputDirectory(uuid);
-        final File inputFile = new File(inputDir, sanitizeFileName(filename));
+    private File outputFile(final String uuid, final byte[] fileBytes) throws IOException {
+        final File inputFile = new File(createInputDirectory(), uuid);
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
