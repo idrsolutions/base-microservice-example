@@ -307,10 +307,9 @@ public abstract class BaseServlet extends HttpServlet {
      */
     private static File createOutputDirectory() {
         final File outputDir = new File(OUTPUTPATH);
-        if (outputDir.exists()) {
-            FileHelper.deleteFolder(outputDir);
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
         }
-        outputDir.mkdirs();
         return outputDir;
     }
 
