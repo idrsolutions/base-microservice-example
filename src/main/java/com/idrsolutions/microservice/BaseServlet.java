@@ -22,7 +22,6 @@ package com.idrsolutions.microservice;
 
 import com.idrsolutions.microservice.db.DBHandler;
 import com.idrsolutions.microservice.utils.DownloadHelper;
-import com.idrsolutions.microservice.utils.FileHelper;
 import com.idrsolutions.microservice.utils.HttpHelper;
 
 import javax.json.Json;
@@ -288,32 +287,6 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Create the input directory for the clients file.
-     *
-     * @return the input directory
-     */
-    private static File createInputDirectory() {
-        final File inputDir = new File(INPUTPATH);
-        if (!inputDir.exists()) {
-            inputDir.mkdirs();
-        }
-        return inputDir;
-    }
-
-    /**
-     * Create the output directory to store the converted pdf at.
-     *
-     * @return the output directory
-     */
-    private static File createOutputDirectory() {
-        final File outputDir = new File(OUTPUTPATH);
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
-        return outputDir;
-    }
-
-    /**
      * Handle and convert file uploaded in the request.
      * <p>
      * This method blocks until the file is initially processed and exists when
@@ -380,7 +353,7 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        final File outputDir = createOutputDirectory();
+        final File outputDir = (File) getServletContext().getAttribute("outputDir");
 
         final String[] rawParam = params.get("callbackUrl");
         final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
@@ -470,7 +443,7 @@ public abstract class BaseServlet extends HttpServlet {
                 DBHandler.getInstance().setError(uuid, 1210, "File exceeds file size limit");
             }
 
-            final File outputDir = createOutputDirectory();
+            final File outputDir = (File) getServletContext().getAttribute("outputDir");
             addToQueue(uuid, inputFile, outputDir, contextUrl);
         });
 
@@ -536,7 +509,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @throws IOException on file not being writable
      */
     private File outputFile(final String uuid, final byte[] fileBytes) throws IOException {
-        final File inputFile = new File(createInputDirectory(), uuid);
+        final File inputFile = new File((File) getServletContext().getAttribute("inputDir"), uuid);
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);

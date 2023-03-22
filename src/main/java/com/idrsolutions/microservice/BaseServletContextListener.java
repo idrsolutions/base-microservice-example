@@ -128,6 +128,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
         DBHandler.initialise();
+
+        createInputOutputDirectories(servletContext);
     }
 
     @Override
@@ -139,6 +141,21 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
 
         ((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).shutdownNow();
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void createInputOutputDirectories(final ServletContext servletContext) {
+        final File inputDir = new File(BaseServlet.getInputPath());
+        if (!inputDir.exists()) {
+            inputDir.mkdirs();
+        }
+        servletContext.setAttribute("inputDir", inputDir);
+
+        final File outputDir = new File(BaseServlet.getOutputPath());
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        servletContext.setAttribute("outputDir", outputDir);
     }
 
     protected void validateConfigFileValues(final Properties propertiesFile) {
