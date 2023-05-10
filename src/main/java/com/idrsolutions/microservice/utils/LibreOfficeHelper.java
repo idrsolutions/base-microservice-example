@@ -59,9 +59,11 @@ public class LibreOfficeHelper {
     public static ProcessUtils.Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
-        final String processCommand = sofficePath + " -env:UserInstallation=file:///" + uniqueLOProfile + " --headless --convert-to pdf " + file.getName();
+        final String[] commandAndArgs = new String[] {sofficePath,
+                "-env:UserInstallation=file://" + uniqueLOProfile,
+                "--headless", "--convert-to", "pdf", file.getName()};
 
-        final ProcessUtils.Result result =  ProcessUtils.runProcess(processCommand, file.getParentFile(), uuid, "LibreOfficeConversion", timeoutDuration);
+        final ProcessUtils.Result result =  ProcessUtils.runProcess(commandAndArgs, file.getParentFile(), uuid, "LibreOfficeConversion", timeoutDuration);
 
         FileHelper.deleteFolder(new File(uniqueLOProfile));
 
