@@ -53,7 +53,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
     public static final String KEY_PROPERTY_MAX_CONVERSION_DURATION = "maxConversionDuration";
-    public static final String KEY_PROPERTY_REGISTRY = "remoteTrackingRegistry";
+    public static final String KEY_PROPERTY_REMOTE_TRACKING_REGISTRY = "remoteTrackingRegistry";
+    public static final String KEY_PROPERTY_REMOTE_TRACKING_PORT = "remoteTracker.port";
 
     private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
 
