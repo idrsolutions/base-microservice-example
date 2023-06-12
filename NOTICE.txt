@@ -1,0 +1,9 @@
+                        Base Microservice Example
+                        =========================
+
+Please visit the IDRSolutions implementations of the base microservice for examples of this project in use:
+  * https://github.com/idrsolutions/buildvu-microservice-example
+  * https://github.com/idrsolutions/formvu-microservice-example
+  * https://github.com/idrsolutions/jpedal-microservice-example
+
+Copyright 2018 - 2023 IDRsolutions
