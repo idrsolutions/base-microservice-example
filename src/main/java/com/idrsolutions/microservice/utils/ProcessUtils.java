@@ -76,11 +76,16 @@ public class ProcessUtils {
                 return ProcessUtils.Result.TIMEOUT;
             }
             run.setValue(false);
+            final int v = process.exitValue();
+            LOG.log(Level.SEVERE, "Exit Value " + v);
+            if (v == 0) {
+                return Result.SUCCESS;
+            }
         } catch (final IOException | InterruptedException e) {
             LOG.log(Level.SEVERE, "Process " + processIdentifier + " for " + uuid + " threw an exception", e);
             return ProcessUtils.Result.ERROR;
         }
-        return ProcessUtils.Result.SUCCESS;
+        return Result.ERROR;
     }
 
     private static Process createProcess(final String[] processCommand, final File workingDirectory) throws IOException {
