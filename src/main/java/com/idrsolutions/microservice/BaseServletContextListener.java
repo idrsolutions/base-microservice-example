@@ -55,6 +55,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_MAX_CONVERSION_DURATION = "maxConversionDuration";
     public static final String KEY_PROPERTY_REMOTE_TRACKING_REGISTRY = "remoteTrackingRegistry";
     public static final String KEY_PROPERTY_REMOTE_TRACKING_PORT = "remoteTracker.port";
+    public static final String KEY_PROPERTY_CONVERSION_MEMORY = "conversionMemoryLimit";
 
     private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
 
@@ -153,6 +154,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateFileDeletionService(propertiesFile);
         validateFileDeletionServiceFrequency(propertiesFile);
         validateMaxConversionDuration(propertiesFile);
+        validateConversionMemoryLimit(propertiesFile);
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
@@ -257,6 +259,19 @@ public abstract class BaseServletContextListener implements ServletContextListen
             properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
             final String message = String.format("Interpreting \"Infinity\" as %d", Long.MAX_VALUE);
             LOG.log(Level.INFO, message);
+        }
+    }
+
+    private static void validateConversionMemoryLimit(final Properties properties) {
+        final String maxMemory = properties.getProperty(KEY_PROPERTY_CONVERSION_MEMORY);
+        if (maxMemory == null || maxMemory.isEmpty()) {
+            properties.setProperty(KEY_PROPERTY_CONVERSION_MEMORY, "-1");
+            LOG.log(Level.WARNING, "Properties value for \"conversionMemoryLimit\" was not set so memory consumption for conversion will be unlimited.");
+        } else if ("0".equals(maxMemory) || !maxMemory.matches("\\d+")){
+            properties.setProperty(KEY_PROPERTY_CONVERSION_MEMORY, "-1");
+            final String message = String.format("Properties value for \"conversionMemoryLimit\" was set to " +
+                    "\"%s\" but should be a positive integer. Using a value of Infinity.", maxMemory);
+            LOG.log(Level.WARNING, message);
         }
     }
 }

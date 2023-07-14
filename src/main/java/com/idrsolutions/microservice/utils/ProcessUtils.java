@@ -60,6 +60,8 @@ public class ProcessUtils {
                         final String line = outRead.readLine();
                         if (line != null) {
                             LOG.log(Level.SEVERE, line);
+                        } else {
+                            break;
                         }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
