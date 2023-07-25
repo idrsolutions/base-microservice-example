@@ -340,6 +340,9 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
+        settings.put("org.jpedal.pdf2html.originalFileName", originalFileName);
+        settings.put("org.jpedal.pdf2html.omitNameDir", "true");
+
         final File inputFile;
         try {
             final InputStream fileContent = filePart.getInputStream();
@@ -403,6 +406,9 @@ public abstract class BaseServlet extends HttpServlet {
             doError(request, response, "File has no extension", 400);
             return false;
         }
+
+        settings.put("org.jpedal.pdf2html.originalFileName", filename);
+        settings.put("org.jpedal.pdf2html.omitNameDir", "true");
 
         final long fileSizeLimit = getFileSizeLimit(request);
         if (fileSizeLimit > 0) {
