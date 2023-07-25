@@ -340,8 +340,7 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        settings.put("org.jpedal.pdf2html.originalFileName", originalFileName);
-        settings.put("org.jpedal.pdf2html.omitNameDir", "true");
+        customData.put("originalFileName", originalFileName);
 
         final File inputFile;
         try {
