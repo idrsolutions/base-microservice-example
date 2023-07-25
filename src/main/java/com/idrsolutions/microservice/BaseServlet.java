@@ -406,8 +406,7 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        settings.put("org.jpedal.pdf2html.originalFileName", filename);
-        settings.put("org.jpedal.pdf2html.omitNameDir", "true");
+        customData.put("originalFileName", filename);
 
         final long fileSizeLimit = getFileSizeLimit(request);
         if (fileSizeLimit > 0) {
