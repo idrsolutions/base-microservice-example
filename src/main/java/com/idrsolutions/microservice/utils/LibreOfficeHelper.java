@@ -60,7 +60,7 @@ public class LibreOfficeHelper {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
         final String[] commandAndArgs = new String[] {sofficePath,
-                "-env:UserInstallation=file://" + uniqueLOProfile,
+                "-env:UserInstallation=file:///" + uniqueLOProfile,
                 "--headless", "--convert-to", "pdf", file.getName()};
 
         final ProcessUtils.Result result =  ProcessUtils.runProcess(commandAndArgs, file.getParentFile(), uuid, "LibreOfficeConversion", timeoutDuration);
