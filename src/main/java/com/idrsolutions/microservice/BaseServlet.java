@@ -507,13 +507,13 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Write the given file bytes to the output directory under filename.
      *
-     * @param uuid the uuid of the conversion request
+     * @param filename the filename to output to
      * @param fileBytes the bytes to be written.
      * @return the created file
      * @throws IOException on file not being writable
      */
-    private File outputFile(final String uuid, final byte[] fileBytes) throws IOException {
-        final File inputFile = new File((File) getServletContext().getAttribute("inputDir"), uuid);
+    private File outputFile(final String filename, final byte[] fileBytes) throws IOException {
+        final File inputFile = new File((File) getServletContext().getAttribute("inputDir"), filename);
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);
