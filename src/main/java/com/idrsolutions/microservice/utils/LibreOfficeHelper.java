@@ -20,31 +20,10 @@
  */
 package com.idrsolutions.microservice.utils;
 
-import com.idrsolutions.microservice.db.DBHandler;
-
 import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LibreOfficeHelper {
-
-    public enum Result {
-        SUCCESS(0),
-        TIMEOUT(1050),
-        ERROR(1070);
-
-        final int code;
-
-        Result(int code) {
-            this.code = code;
-        }
-
-        public int getCode() {
-            return code;
-        }
-    }
 
     private static final Logger LOG = Logger.getLogger(LibreOfficeHelper.class.getName());
     private static final String TEMP_DIR;
@@ -66,7 +45,7 @@ public class LibreOfficeHelper {
      * @return true on success, false on failure
      */
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
-        return convertDocToPDF(sofficePath, file, uuid, 60000) == Result.SUCCESS;
+        return convertDocToPDF(sofficePath, file, uuid, 60000) == ProcessUtils.Result.SUCCESS;
     }
 
     /**
@@ -77,30 +56,18 @@ public class LibreOfficeHelper {
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return Result enum value depending on the conversion result
      */
-    public static Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
+    public static ProcessUtils.Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
-        final ProcessBuilder pb = new ProcessBuilder(sofficePath,
+        final String[] commandAndArgs = new String[] {sofficePath,
                 "-env:UserInstallation=file:///" + uniqueLOProfile,
-                "--headless", "--convert-to", "pdf", file.getName());
+                "--headless", "--convert-to", "pdf", file.getName()};
 
-        pb.directory(new File(file.getParent()));
+        final ProcessUtils.Result result =  ProcessUtils.runProcess(commandAndArgs, file.getParentFile(), uuid, "LibreOfficeConversion", timeoutDuration);
 
-        try {
-            final Process process = pb.start();
-            if (!process.waitFor(timeoutDuration, TimeUnit.MILLISECONDS)) {
-                process.destroy();
-                final String fileSizeString = getFileSizeAsString(file.length());
-                LOG.log(Level.SEVERE, "LibreOffice timed out on " + uuid + " with filesize: " + fileSizeString); // soffice location may need to be added to the path
-                return Result.TIMEOUT;
-            }
-        } catch (final IOException | InterruptedException e) {
-            LOG.log(Level.SEVERE, "Exception thrown when converting with LibreOffice", e); // soffice location may need to be added to the path
-            return Result.ERROR;
-        } finally {
-            FileHelper.deleteFolder(new File(uniqueLOProfile));
-        }
-        return Result.SUCCESS;
+        FileHelper.deleteFolder(new File(uniqueLOProfile));
+
+        return result;
     }
 
     private static String getFileSizeAsString(final long fileSize) {
