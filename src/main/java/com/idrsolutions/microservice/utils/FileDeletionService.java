@@ -72,7 +72,9 @@ public class FileDeletionService {
                                         final String uuidFromFileName = file.getName();
                                         try {
                                             final Map<String, String> status = DBHandler.getInstance().getStatus(uuidFromFileName);
-                                            return status == null || "processed".equals(status.get("state"));
+                                            return status == null
+                                                    || "processed".equals(status.get("state"))
+                                                    || "error".equals(status.get("state"));
                                         } catch (SQLException e) {
                                             final String message = String.format("Error finding status for conversion (%s)", uuidFromFileName);
                                             LOG.log(Level.WARNING, message, e);
