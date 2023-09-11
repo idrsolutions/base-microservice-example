@@ -58,7 +58,7 @@ public class ProcessUtils {
                 while (run.getValue()) {
                     try {
                         final String line = outRead.readLine();
-                        if (line != null) {
+                        if (line != null && !line.startsWith("NOTE: Picked up JDK_JAVA_OPTIONS:")) {
                             LOG.log(Level.SEVERE, line);
                         } else {
                             break;
