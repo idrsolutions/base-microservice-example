@@ -1,9 +1,5 @@
-                        Base Microservice Example
-                        =========================
-
-Please visit the IDRSolutions implementations of the base microservice for examples of this project in use:
-  * https://github.com/idrsolutions/buildvu-microservice-example
-  * https://github.com/idrsolutions/formvu-microservice-example
-  * https://github.com/idrsolutions/jpedal-microservice-example
+Base Microservice Example
 
 Copyright 2018 - 2023 IDRsolutions
+This project includes work covered by the following copyright:
+DefaultFileServlet.java - Copyright 2021 OmniFaces
