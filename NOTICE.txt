@@ -1,5 +1,5 @@
 Base Microservice Example
 
 Copyright 2018 - 2023 IDRsolutions
-This project includes work covered by the following copyright:
-DefaultFileServlet.java - Copyright 2021 OmniFaces
+The DefaultFileServlet class is a derivation of FileServlet by OmniFaces.
+Copyright 2021 OmniFaces
