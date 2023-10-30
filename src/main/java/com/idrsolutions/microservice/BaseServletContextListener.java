@@ -21,6 +21,7 @@ package com.idrsolutions.microservice;
 import com.idrsolutions.microservice.db.DBHandler;
 import com.idrsolutions.microservice.storage.Storage;
 import com.idrsolutions.microservice.utils.FileDeletionService;
+import com.idrsolutions.microservice.utils.ProgressTracker;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -30,6 +31,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -130,6 +138,16 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
         DBHandler.initialise();
+
+        final String remoteTrackingPort = propertiesFile.getProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT);
+        try {
+            LOG.log(Level.INFO, "Creating RMI registry on port " + remoteTrackingPort);
+            final Registry registry = LocateRegistry.createRegistry(Integer.parseInt(remoteTrackingPort));
+            propertiesFile.put(KEY_PROPERTY_REMOTE_TRACKING_REGISTRY, registry);
+            registry.bind("com.idrsolutions.remoteTracker.stub", new ProgressTracker(Integer.parseInt(remoteTrackingPort)));
+        } catch (final RemoteException | AlreadyBoundException e) {
+            LOG.log(Level.SEVERE, "Unable to create Registry to allow conversion tracking.", e);
+        }
     }
 
     @Override
@@ -163,11 +181,29 @@ public abstract class BaseServletContextListener implements ServletContextListen
             LOG.log(Level.SEVERE, "callbackQueue shutdown timed out", e);
         }
         try {
-            if (((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).awaitTermination(1, TimeUnit.MINUTES)) {
+            if (!((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).awaitTermination(1, TimeUnit.MINUTES)) {
                 LOG.log(Level.SEVERE, "FileDeletionService did not terminate within timeout");
             }
         } catch (final InterruptedException e) {
             LOG.log(Level.SEVERE, "FileDeletionService shutdown timed out", e);
+        }
+
+        LOG.log(Level.INFO, "Shutting down RMI registry");
+        final Properties propertiesFile = (Properties) servletContextEvent.getServletContext().getAttribute(KEY_PROPERTIES);
+        final Registry registry = ((Registry) propertiesFile.get(KEY_PROPERTY_REMOTE_TRACKING_REGISTRY));
+        if (registry != null) {
+            try {
+                final Remote stub = registry.lookup("com.idrsolutions.remoteTracker.stub");
+                registry.unbind("com.idrsolutions.remoteTracker.stub");
+                UnicastRemoteObject.unexportObject(stub, true);
+            } catch (final RemoteException | NotBoundException e) {
+                LOG.log(Level.SEVERE, "Unable to unbind/unexport RemoteTracker stub", e);
+            }
+            try {
+                UnicastRemoteObject.unexportObject(registry, true);
+            } catch (final RemoteException e) {
+                LOG.log(Level.SEVERE, "Unable to stop Registry for conversion tracking.", e);
+            }
         }
     }
 
@@ -182,6 +218,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateFileDeletionServiceFrequency(propertiesFile);
         validateMaxConversionDuration(propertiesFile);
         validateConversionMemoryLimit(propertiesFile);
+        validateRemoteTrackerPort(propertiesFile);
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
@@ -299,6 +336,14 @@ public abstract class BaseServletContextListener implements ServletContextListen
             final String message = String.format("Properties value for \"conversionMemoryLimit\" was set to " +
                     "\"%s\" but should be a positive integer. Using a value of Infinity.", maxMemory);
             LOG.log(Level.WARNING, message);
+        }
+    }
+
+    private static void validateRemoteTrackerPort(final Properties properties) {
+        final String remoteTrackingPort = properties.getProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT);
+        if (remoteTrackingPort == null || remoteTrackingPort.isEmpty() || !remoteTrackingPort.matches("\\d+")) {
+            properties.setProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT, "1099");
+            LOG.log(Level.WARNING, "Properties value for \"remoteTracker.port\" was not set. Using a value of \"1099\"");
         }
     }
 }
