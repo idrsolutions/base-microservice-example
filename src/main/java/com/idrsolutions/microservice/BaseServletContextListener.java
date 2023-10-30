@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -138,8 +139,36 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("convertQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
-
         ((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).shutdownNow();
+
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("convertQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "convertQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "convertQueue shutdown timed out", e);
+        }
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("downloadQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "downloadQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "downloadQueue shutdown timed out", e);
+        }
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("callbackQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "callbackQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "callbackQueue shutdown timed out", e);
+        }
+        try {
+            if (((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "FileDeletionService did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "FileDeletionService shutdown timed out", e);
+        }
     }
 
     protected void validateConfigFileValues(final Properties propertiesFile) {
