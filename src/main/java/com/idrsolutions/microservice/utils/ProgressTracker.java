@@ -8,12 +8,12 @@ import java.rmi.server.UnicastRemoteObject;
 
 public class ProgressTracker extends UnicastRemoteObject implements RemoteTracker {
 
-    public ProgressTracker(int port) throws RemoteException {
+    public ProgressTracker(final int port) throws RemoteException {
         super(port);
     }
 
     @Override
-    public void finishedPageDecoding(String uuid, int rawPage) {
+    public void finishedPageDecoding(final String uuid, final int rawPage) {
         DBHandler.getInstance().setCustomValue(uuid, "pagesConverted", String.valueOf(rawPage));
     }
 }
