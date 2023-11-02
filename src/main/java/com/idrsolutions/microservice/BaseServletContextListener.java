@@ -126,6 +126,9 @@ public abstract class BaseServletContextListener implements ServletContextListen
         BaseServlet.setOutputPath(propertiesFile.getProperty(KEY_PROPERTY_OUTPUT_PATH));
         BaseServlet.setIndividualTTL(Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_INDIVIDUAL_TTL)));
 
+        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
+        DBHandler.initialise();
+
         if (Boolean.parseBoolean(propertiesFile.getProperty(KEY_PROPERTY_FILE_DELETION_SERVICE))) {
             servletContext.setAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE, new FileDeletionService(
                     new String[]{
@@ -135,9 +138,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
                     Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY))
             ));
         }
-
-        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
-        DBHandler.initialise();
 
         final String remoteTrackingPort = propertiesFile.getProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT);
         try {
