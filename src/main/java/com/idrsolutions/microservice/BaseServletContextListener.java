@@ -60,7 +60,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
     public static final String KEY_PROPERTY_MAX_CONVERSION_DURATION = "maxConversionDuration";
-    public static final String KEY_PROPERTY_REMOTE_TRACKING_REGISTRY = "remoteTrackingRegistry";
     public static final String KEY_PROPERTY_REMOTE_TRACKING_PORT = "remoteTracker.port";
     public static final String KEY_PROPERTY_CONVERSION_MEMORY = "conversionMemoryLimit";
 
@@ -143,7 +142,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         try {
             LOG.log(Level.INFO, "Creating RMI registry on port " + remoteTrackingPort);
             final Registry registry = LocateRegistry.createRegistry(Integer.parseInt(remoteTrackingPort));
-            propertiesFile.put(KEY_PROPERTY_REMOTE_TRACKING_REGISTRY, registry);
+            servletContext.setAttribute("com.idrsolutions.remoteTracker.registry", registry);
             registry.bind("com.idrsolutions.remoteTracker.stub", new ProgressTracker(Integer.parseInt(remoteTrackingPort)));
         } catch (final RemoteException | AlreadyBoundException e) {
             LOG.log(Level.SEVERE, "Unable to create Registry to allow conversion tracking.", e);
@@ -189,8 +188,7 @@ public abstract class BaseServletContextListener implements ServletContextListen
         }
 
         LOG.log(Level.INFO, "Shutting down RMI registry");
-        final Properties propertiesFile = (Properties) servletContextEvent.getServletContext().getAttribute(KEY_PROPERTIES);
-        final Registry registry = ((Registry) propertiesFile.get(KEY_PROPERTY_REMOTE_TRACKING_REGISTRY));
+        final Registry registry = (Registry) servletContext.getAttribute("com.idrsolutions.remoteTracker.registry");
         if (registry != null) {
             try {
                 final Remote stub = registry.lookup("com.idrsolutions.remoteTracker.stub");
