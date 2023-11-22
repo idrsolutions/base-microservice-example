@@ -175,4 +175,16 @@ public class FileDeletionService {
         return scheduledExecutorService.shutdownNow();
     }
 
+    /**
+     * Awaits termination of the FileDeletionService.
+     *
+     * @param timeout the maximum time to wait
+     * @param timeUnit the time unit of the timeout argument
+     * @return true if this executor terminated and false if the timeout elapsed before termination
+     * @throws InterruptedException if interrupted while waiting
+     */
+    public boolean awaitTermination(final long timeout, final TimeUnit timeUnit) throws InterruptedException {
+        return scheduledExecutorService.awaitTermination(timeout, timeUnit);
+    }
+
 }
