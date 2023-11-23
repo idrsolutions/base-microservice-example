@@ -156,7 +156,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("convertQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
-        ((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).shutdownNow();
 
         try {
             if (!((ExecutorService) servletContext.getAttribute("convertQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
@@ -179,12 +178,17 @@ public abstract class BaseServletContextListener implements ServletContextListen
         } catch (final InterruptedException e) {
             LOG.log(Level.SEVERE, "callbackQueue shutdown timed out", e);
         }
-        try {
-            if (!((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).awaitTermination(1, TimeUnit.MINUTES)) {
-                LOG.log(Level.SEVERE, "FileDeletionService did not terminate within timeout");
+
+        final FileDeletionService fileDeletionService = (FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE);
+        if (fileDeletionService != null) {
+            fileDeletionService.shutdownNow();
+            try {
+                if (!fileDeletionService.awaitTermination(1, TimeUnit.MINUTES)) {
+                    LOG.log(Level.SEVERE, "FileDeletionService did not terminate within timeout");
+                }
+            } catch (final InterruptedException e) {
+                LOG.log(Level.SEVERE, "FileDeletionService shutdown timed out", e);
             }
-        } catch (final InterruptedException e) {
-            LOG.log(Level.SEVERE, "FileDeletionService shutdown timed out", e);
         }
 
         LOG.log(Level.INFO, "Shutting down RMI registry");
