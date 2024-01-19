@@ -743,7 +743,11 @@ public abstract class BaseServlet extends HttpServlet {
                         break;
                     case VALUE_NUMBER:
                         if (currentKey != null && arrayDepth < 1) {
-                            out.put(currentKey, String.valueOf(jp.getInt()));
+                            if (jp.isIntegralNumber()) {
+                                out.put(currentKey, String.valueOf(jp.getInt()));
+                            } else {
+                                out.put(currentKey, jp.getBigDecimal().toString());
+                            }
                         }
                         break;
                     case VALUE_TRUE:
