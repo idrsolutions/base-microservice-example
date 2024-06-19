@@ -1,0 +1,5 @@
+Base Microservice Example
+
+Copyright 2018 - 2024 IDRsolutions
+The DefaultFileServlet class is a derivation of FileServlet by OmniFaces.
+Copyright 2021 OmniFaces

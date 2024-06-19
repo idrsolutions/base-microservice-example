@@ -1,3 +1,21 @@
+/*
+ * Base Microservice Example
+ *
+ * Project Info: https://github.com/idrsolutions/base-microservice-example
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package com.idrsolutions.microservice.utils;
 
 import com.idrsolutions.microservice.db.DBHandler;
@@ -72,7 +90,9 @@ public class FileDeletionService {
                                         final String uuidFromFileName = file.getName();
                                         try {
                                             final Map<String, String> status = DBHandler.getInstance().getStatus(uuidFromFileName);
-                                            return status == null || "processed".equals(status.get("state"));
+                                            return status == null
+                                                    || "processed".equals(status.get("state"))
+                                                    || "error".equals(status.get("state"));
                                         } catch (SQLException e) {
                                             final String message = String.format("Error finding status for conversion (%s)", uuidFromFileName);
                                             LOG.log(Level.WARNING, message, e);
@@ -153,6 +173,18 @@ public class FileDeletionService {
      */
     public List<Runnable> shutdownNow() {
         return scheduledExecutorService.shutdownNow();
+    }
+
+    /**
+     * Awaits termination of the FileDeletionService.
+     *
+     * @param timeout the maximum time to wait
+     * @param timeUnit the time unit of the timeout argument
+     * @return true if this executor terminated and false if the timeout elapsed before termination
+     * @throws InterruptedException if interrupted while waiting
+     */
+    public boolean awaitTermination(final long timeout, final TimeUnit timeUnit) throws InterruptedException {
+        return scheduledExecutorService.awaitTermination(timeout, timeUnit);
     }
 
 }

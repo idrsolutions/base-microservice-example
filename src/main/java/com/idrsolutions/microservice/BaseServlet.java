@@ -3,8 +3,6 @@
  *
  * Project Info: https://github.com/idrsolutions/base-microservice-example
  *
- * Copyright 2022 IDRsolutions
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -696,7 +694,11 @@ public abstract class BaseServlet extends HttpServlet {
                         break;
                     case VALUE_NUMBER:
                         if (currentKey != null && arrayDepth < 1) {
-                            out.put(currentKey, String.valueOf(jp.getInt()));
+                            if (jp.isIntegralNumber()) {
+                                out.put(currentKey, String.valueOf(jp.getInt()));
+                            } else {
+                                out.put(currentKey, jp.getBigDecimal().toString());
+                            }
                         }
                         break;
                     case VALUE_TRUE:

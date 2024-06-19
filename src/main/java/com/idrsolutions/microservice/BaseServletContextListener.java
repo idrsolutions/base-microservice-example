@@ -3,8 +3,6 @@
  *
  * Project Info: https://github.com/idrsolutions/base-microservice-example
  *
- * Copyright 2022 IDRsolutions
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +21,7 @@ package com.idrsolutions.microservice;
 import com.idrsolutions.microservice.db.DBHandler;
 import com.idrsolutions.microservice.storage.Storage;
 import com.idrsolutions.microservice.utils.FileDeletionService;
+import com.idrsolutions.microservice.utils.ProgressTracker;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -32,10 +31,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -53,6 +60,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE = "fileDeletionService";
     public static final String KEY_PROPERTY_FILE_DELETION_SERVICE_FREQUENCY = "fileDeletionService.frequency";
     public static final String KEY_PROPERTY_MAX_CONVERSION_DURATION = "maxConversionDuration";
+    public static final String KEY_PROPERTY_REMOTE_TRACKING_PORT = "remoteTracker.port";
+    public static final String KEY_PROPERTY_CONVERSION_MEMORY = "conversionMemoryLimit";
 
     private static final String KEY_PROPERTY_DATABASE_JNDI_NAME = "databaseJNDIName";
 
@@ -114,7 +123,13 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         BaseServlet.setInputPath(propertiesFile.getProperty(KEY_PROPERTY_INPUT_PATH));
         BaseServlet.setOutputPath(propertiesFile.getProperty(KEY_PROPERTY_OUTPUT_PATH));
+
+        createInputOutputDirectories(servletContext);
+
         BaseServlet.setIndividualTTL(Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_INDIVIDUAL_TTL)));
+
+        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
+        DBHandler.initialise();
 
         if (Boolean.parseBoolean(propertiesFile.getProperty(KEY_PROPERTY_FILE_DELETION_SERVICE))) {
             servletContext.setAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE, new FileDeletionService(
@@ -126,10 +141,15 @@ public abstract class BaseServletContextListener implements ServletContextListen
             ));
         }
 
-        DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
-        DBHandler.initialise();
-
-        createInputOutputDirectories(servletContext);
+        final String remoteTrackingPort = propertiesFile.getProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT);
+        try {
+            LOG.log(Level.INFO, "Creating RMI registry on port " + remoteTrackingPort);
+            final Registry registry = LocateRegistry.createRegistry(Integer.parseInt(remoteTrackingPort));
+            servletContext.setAttribute("com.idrsolutions.remoteTracker.registry", registry);
+            registry.bind("com.idrsolutions.remoteTracker.stub", new ProgressTracker(Integer.parseInt(remoteTrackingPort)));
+        } catch (final RemoteException | AlreadyBoundException e) {
+            LOG.log(Level.SEVERE, "Unable to create Registry to allow conversion tracking.", e);
+        }
     }
 
     @Override
@@ -140,7 +160,56 @@ public abstract class BaseServletContextListener implements ServletContextListen
         ((ExecutorService) servletContext.getAttribute("downloadQueue")).shutdownNow();
         ((ExecutorService) servletContext.getAttribute("callbackQueue")).shutdownNow();
 
-        ((FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE)).shutdownNow();
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("convertQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "convertQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "convertQueue shutdown timed out", e);
+        }
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("downloadQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "downloadQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "downloadQueue shutdown timed out", e);
+        }
+        try {
+            if (!((ExecutorService) servletContext.getAttribute("callbackQueue")).awaitTermination(1, TimeUnit.MINUTES)) {
+                LOG.log(Level.SEVERE, "callbackQueue did not terminate within timeout");
+            }
+        } catch (final InterruptedException e) {
+            LOG.log(Level.SEVERE, "callbackQueue shutdown timed out", e);
+        }
+
+        final FileDeletionService fileDeletionService = (FileDeletionService) servletContext.getAttribute(KEY_PROPERTY_FILE_DELETION_SERVICE);
+        if (fileDeletionService != null) {
+            fileDeletionService.shutdownNow();
+            try {
+                if (!fileDeletionService.awaitTermination(1, TimeUnit.MINUTES)) {
+                    LOG.log(Level.SEVERE, "FileDeletionService did not terminate within timeout");
+                }
+            } catch (final InterruptedException e) {
+                LOG.log(Level.SEVERE, "FileDeletionService shutdown timed out", e);
+            }
+        }
+
+        LOG.log(Level.INFO, "Shutting down RMI registry");
+        final Registry registry = (Registry) servletContext.getAttribute("com.idrsolutions.remoteTracker.registry");
+        if (registry != null) {
+            try {
+                final Remote stub = registry.lookup("com.idrsolutions.remoteTracker.stub");
+                registry.unbind("com.idrsolutions.remoteTracker.stub");
+                UnicastRemoteObject.unexportObject(stub, true);
+            } catch (final RemoteException | NotBoundException e) {
+                LOG.log(Level.SEVERE, "Unable to unbind/unexport RemoteTracker stub", e);
+            }
+            try {
+                UnicastRemoteObject.unexportObject(registry, true);
+            } catch (final RemoteException e) {
+                LOG.log(Level.SEVERE, "Unable to stop Registry for conversion tracking.", e);
+            }
+        }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -168,6 +237,8 @@ public abstract class BaseServletContextListener implements ServletContextListen
         validateFileDeletionService(propertiesFile);
         validateFileDeletionServiceFrequency(propertiesFile);
         validateMaxConversionDuration(propertiesFile);
+        validateConversionMemoryLimit(propertiesFile);
+        validateRemoteTrackerPort(propertiesFile);
     }
 
     private static void validateConversionThreadCount(final Properties properties) {
@@ -272,6 +343,27 @@ public abstract class BaseServletContextListener implements ServletContextListen
             properties.setProperty(KEY_PROPERTY_MAX_CONVERSION_DURATION, String.valueOf(Long.MAX_VALUE));
             final String message = String.format("Interpreting \"Infinity\" as %d", Long.MAX_VALUE);
             LOG.log(Level.INFO, message);
+        }
+    }
+
+    private static void validateConversionMemoryLimit(final Properties properties) {
+        final String maxMemory = properties.getProperty(KEY_PROPERTY_CONVERSION_MEMORY);
+        if (maxMemory == null || maxMemory.isEmpty()) {
+            properties.setProperty(KEY_PROPERTY_CONVERSION_MEMORY, "-1");
+            LOG.log(Level.WARNING, "Properties value for \"conversionMemoryLimit\" was not set so memory consumption for conversion will be unlimited.");
+        } else if ("0".equals(maxMemory) || !maxMemory.matches("\\d+")){
+            properties.setProperty(KEY_PROPERTY_CONVERSION_MEMORY, "-1");
+            final String message = String.format("Properties value for \"conversionMemoryLimit\" was set to " +
+                    "\"%s\" but should be a positive integer. Using a value of Infinity.", maxMemory);
+            LOG.log(Level.WARNING, message);
+        }
+    }
+
+    private static void validateRemoteTrackerPort(final Properties properties) {
+        final String remoteTrackingPort = properties.getProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT);
+        if (remoteTrackingPort == null || remoteTrackingPort.isEmpty() || !remoteTrackingPort.matches("\\d+")) {
+            properties.setProperty(KEY_PROPERTY_REMOTE_TRACKING_PORT, "1099");
+            LOG.log(Level.WARNING, "Properties value for \"remoteTracker.port\" was not set. Using a value of \"1099\"");
         }
     }
 }
