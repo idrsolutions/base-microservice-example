@@ -32,9 +32,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -241,7 +245,7 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param request the request from the client
      * @param response the response to send once this method exits
-     * @see BaseServlet#convert(String, File, File, String)
+     * @see BaseServlet#convert(String, File, String)
      */
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
@@ -328,11 +332,6 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        if (originalFileName.getBytes().length > 255) {
-            doError(request, response, "Filename is too large", 400);
-            return false;
-        }
-
         if (originalFileName.indexOf('.') == -1) {
             doError(request, response, "File has no extension", 400);
             return false;
@@ -353,14 +352,12 @@ public abstract class BaseServlet extends HttpServlet {
             return false;
         }
 
-        final File outputDir = (File) getServletContext().getAttribute("outputDir");
-
         final String[] rawParam = params.get("callbackUrl");
         final String callbackUrl = (rawParam != null && rawParam.length > 0) ? rawParam[0] : "";
 
         DBHandler.getInstance().initializeConversion(uuid, callbackUrl, customData, settings);
 
-        addToQueue(uuid, inputFile, outputDir, getContextURL(request));
+        addToQueue(uuid, inputFile, getContextURL(request));
 
         return true;
     }
@@ -445,8 +442,7 @@ public abstract class BaseServlet extends HttpServlet {
                 DBHandler.getInstance().setError(uuid, 1210, "File exceeds file size limit");
             }
 
-            final File outputDir = (File) getServletContext().getAttribute("outputDir");
-            addToQueue(uuid, inputFile, outputDir, contextUrl);
+            addToQueue(uuid, inputFile, contextUrl);
         });
 
         return true;
@@ -457,16 +453,15 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param uuid the uuid of this conversion
      * @param inputFile the input file to convert
-     * @param outputDir the output directory to convert to
      * @param contextUrl the context url of the servlet
      */
-    private void addToQueue(final String uuid, final File inputFile, final File outputDir, final String contextUrl) {
+    private void addToQueue(final String uuid, final File inputFile, final String contextUrl) {
 
         final ExecutorService convertQueue = (ExecutorService) getServletContext().getAttribute("convertQueue");
 
         convertQueue.submit(() -> {
             try {
-                convert(uuid, inputFile, outputDir, contextUrl);
+                convert(uuid, inputFile, contextUrl);
             } finally {
                 handleCallback(uuid);
                 DBHandler.getInstance().setAlive(uuid, false);
@@ -495,12 +490,10 @@ public abstract class BaseServlet extends HttpServlet {
      *
      * @param uuid the uuid of the conversion
      * @param inputFile the File to convert
-     * @param outputDir the directory the converted file should be written to
      * @param contextUrl The url from the protocol up to the servlet url
      * pattern.
      */
-    protected abstract void convert(final String uuid, final File inputFile, final File outputDir,
-                                    final String contextUrl);
+    protected abstract void convert(final String uuid, final File inputFile, final String contextUrl);
 
     /**
      * Write the given file bytes to the output directory under filename.
@@ -511,7 +504,7 @@ public abstract class BaseServlet extends HttpServlet {
      * @throws IOException on file not being writable
      */
     private File outputFile(final String filename, final byte[] fileBytes) throws IOException {
-        final File inputFile = new File((File) getServletContext().getAttribute("inputDir"), filename);
+        final File inputFile = new File(getInputPath(), filename);
 
         try (FileOutputStream output = new FileOutputStream(inputFile)) {
             output.write(fileBytes);

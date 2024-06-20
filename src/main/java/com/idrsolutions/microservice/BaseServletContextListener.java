@@ -124,7 +124,15 @@ public abstract class BaseServletContextListener implements ServletContextListen
         BaseServlet.setInputPath(propertiesFile.getProperty(KEY_PROPERTY_INPUT_PATH));
         BaseServlet.setOutputPath(propertiesFile.getProperty(KEY_PROPERTY_OUTPUT_PATH));
 
-        createInputOutputDirectories(servletContext);
+        final File inputDir = new File(BaseServlet.getInputPath());
+        if (!inputDir.exists() && !inputDir.mkdirs()) {
+            LOG.log(Level.SEVERE, "Unable to create input directory: " + inputDir.getAbsolutePath());
+        }
+
+        final File outputDir = new File(BaseServlet.getOutputPath());
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            LOG.log(Level.SEVERE, "Unable to create output directory: " + outputDir.getAbsolutePath());
+        }
 
         BaseServlet.setIndividualTTL(Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_INDIVIDUAL_TTL)));
 
@@ -210,21 +218,6 @@ public abstract class BaseServletContextListener implements ServletContextListen
                 LOG.log(Level.SEVERE, "Unable to stop Registry for conversion tracking.", e);
             }
         }
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void createInputOutputDirectories(final ServletContext servletContext) {
-        final File inputDir = new File(BaseServlet.getInputPath());
-        if (!inputDir.exists()) {
-            inputDir.mkdirs();
-        }
-        servletContext.setAttribute("inputDir", inputDir);
-
-        final File outputDir = new File(BaseServlet.getOutputPath());
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
-        servletContext.setAttribute("outputDir", outputDir);
     }
 
     protected void validateConfigFileValues(final Properties propertiesFile) {

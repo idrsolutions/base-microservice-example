@@ -35,7 +35,7 @@ public class ZipHelper {
      * @param destZipFile the name of the zip file to zip to
      * @throws IOException if there is a problem writing or reading the file
      */
-    public static void zipFolder(final String srcFolder, final String destZipFile) throws IOException {
+    public static void zipFolder(final File srcFolder, final File destZipFile) throws IOException {
         zipFolder(srcFolder, destZipFile, true);
     }
 
@@ -47,16 +47,18 @@ public class ZipHelper {
      * @param createParentDirectoryInZip whether to include a parent directory within the zip file with the same name as the source folder
      * @throws IOException if there is a problem writing or reading the file
      */
-    public static void zipFolder(final String srcFolder, final String destZipFile, final boolean createParentDirectoryInZip) throws IOException {
-        final File zipOut = new File(destZipFile);
-        if (!zipOut.exists()) {
-            zipOut.createNewFile();
+    public static void zipFolder(final File srcFolder, final File destZipFile, final boolean createParentDirectoryInZip) throws IOException {
+        if (destZipFile.exists()) {
+            throw new IOException(destZipFile.getAbsolutePath() + " already exists");
+        }
+        if (!destZipFile.createNewFile()) {
+            throw new IOException(destZipFile.getAbsolutePath() + " could not be created");
         }
 
         try (
-                final FileOutputStream fileWriter = new FileOutputStream(zipOut);
+                final FileOutputStream fileWriter = new FileOutputStream(destZipFile);
                 final ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
-            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
+            addFolderToZip(createParentDirectoryInZip ? srcFolder.getName() + '/' : "", srcFolder, zip);
             zip.flush();
             fileWriter.flush();
         }
@@ -70,10 +72,10 @@ public class ZipHelper {
      * @return A bytearray containing the zipFile
      * @throws IOException if there is a problem writing or reading the file
      */
-    public static byte[] zipFolderInMemory(final String srcFolder, final boolean createParentDirectoryInZip) throws IOException {
+    public static byte[] zipFolderInMemory(final File srcFolder, final boolean createParentDirectoryInZip) throws IOException {
         try (ByteArrayOutputStream zipBAOS = new ByteArrayOutputStream();
              ZipOutputStream zip = new ZipOutputStream(zipBAOS)) {
-            addFolderToZip(createParentDirectoryInZip ? new File(srcFolder).getName() + '/' : "", srcFolder, zip);
+            addFolderToZip(createParentDirectoryInZip ? srcFolder.getName() + '/' : "", srcFolder, zip);
             zip.flush();
             return zipBAOS.toByteArray();
         }
@@ -82,23 +84,22 @@ public class ZipHelper {
     /**
      * Zips the given file and writes it to the ZipOuputSream. If directory is
      * given then calls 
-     * {@link ZipHelper#addFolderToZip(String, String, ZipOutputStream) }
+     * {@link ZipHelper#addFolderToZip(String, File, ZipOutputStream) }
      *
      * @param path the current location within the zip file (must include a trailing slash unless the value is empty)
      * @param srcFile the path of the file to zip file
      * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
-    private static void addFileToZip(final String path, final String srcFile, final ZipOutputStream zip) throws IOException {
+    private static void addFileToZip(final String path, final File srcFile, final ZipOutputStream zip) throws IOException {
 
-        final File file = new File(srcFile);
-        if (file.isDirectory()) {
-            addFolderToZip(path + file.getName() + '/', srcFile, zip);
+        if (srcFile.isDirectory()) {
+            addFolderToZip(path + srcFile.getName() + '/', srcFile, zip);
         } else {
             try (final FileInputStream in = new FileInputStream(srcFile)) {
                 final byte[] buf = new byte[1024];
                 int len;
-                zip.putNextEntry(new ZipEntry(path + file.getName()));
+                zip.putNextEntry(new ZipEntry(path + srcFile.getName()));
                 while ((len = in.read(buf)) > 0) {
                     zip.write(buf, 0, len);
                 }
@@ -114,12 +115,11 @@ public class ZipHelper {
      * @param zip the zip stream to write to
      * @throws IOException if there is a problem while reading the file
      */
-    private static void addFolderToZip(final String path, final String srcFolder, final ZipOutputStream zip) throws IOException {
-        final File folder = new File(srcFolder);
-        final String[] fileList = folder.list();
+    private static void addFolderToZip(final String path, final File srcFolder, final ZipOutputStream zip) throws IOException {
+        final File[] fileList = srcFolder.listFiles();
         if (fileList != null) {
-            for (final String fileName : fileList) {
-                addFileToZip(path, srcFolder + '/' + fileName, zip);
+            for (final File file : fileList) {
+                addFileToZip(path, file, zip);
             }
         }
     }
