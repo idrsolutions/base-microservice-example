@@ -264,7 +264,11 @@ public abstract class BaseServlet extends HttpServlet {
         }
 
         final Map<String, String[]> parameterMap = new HashMap<>(request.getParameterMap());
-        final Map<String, String> customData = (Map<String, String>) request.getAttribute("com.idrsolutions.microservice.customData");
+        Map<String, String> customData = (Map<String, String>) request.getAttribute("com.idrsolutions.microservice.customData");
+        if (customData == null) {
+            customData = new HashMap<>();
+        }
+
         final Map<String, String> settings = (Map<String, String>) request.getAttribute("com.idrsolutions.microservice.settings");
 
         switch (inputType) {
