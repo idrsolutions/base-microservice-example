@@ -19,11 +19,9 @@
 package com.idrsolutions.microservice.utils;
 
 import java.io.File;
-import java.util.logging.Logger;
 
 public class LibreOfficeHelper {
 
-    private static final Logger LOG = Logger.getLogger(LibreOfficeHelper.class.getName());
     private static final String TEMP_DIR;
 
     static {
@@ -68,13 +66,4 @@ public class LibreOfficeHelper {
         return result;
     }
 
-    private static String getFileSizeAsString(final long fileSize) {
-        if (fileSize < 1_000) {
-            return fileSize + " bytes";
-        } else if (fileSize < 1_000_000) {
-            return String.format("%.2f KB", (fileSize / 1_000f));
-        } else {
-            return String.format("%.2f MB", (fileSize / 1_000_000f));
-        }
-    }
 }
