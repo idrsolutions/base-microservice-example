@@ -123,6 +123,17 @@ public abstract class BaseServletContextListener implements ServletContextListen
 
         BaseServlet.setInputPath(propertiesFile.getProperty(KEY_PROPERTY_INPUT_PATH));
         BaseServlet.setOutputPath(propertiesFile.getProperty(KEY_PROPERTY_OUTPUT_PATH));
+
+        final File inputDir = new File(BaseServlet.getInputPath());
+        if (!inputDir.exists() && !inputDir.mkdirs()) {
+            LOG.log(Level.SEVERE, "Unable to create input directory: " + inputDir.getAbsolutePath());
+        }
+
+        final File outputDir = new File(BaseServlet.getOutputPath());
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            LOG.log(Level.SEVERE, "Unable to create output directory: " + outputDir.getAbsolutePath());
+        }
+
         BaseServlet.setIndividualTTL(Long.parseLong(propertiesFile.getProperty(KEY_PROPERTY_INDIVIDUAL_TTL)));
 
         DBHandler.setDatabaseJNDIName(propertiesFile.getProperty(KEY_PROPERTY_DATABASE_JNDI_NAME));
