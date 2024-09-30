@@ -4,10 +4,14 @@
     <groupId>com.idrsolutions</groupId>
     <artifactId>base-microservice-example</artifactId>
     <packaging>jar</packaging>
-    <version>13.0.0</version>
+    <version>14.0.0</version>
     <name>IDRsolutions Base Microservice Example</name>
     <description>Provides the shared classes used by IDRsolutions microservice examples.</description>
     <url>https://github.com/idrsolutions/base-microservice-example</url>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+    </properties>
 
     <licenses>
         <license>
@@ -126,11 +130,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
+                <version>3.12.1</version>
             </plugin>
         </plugins>
     </build>
