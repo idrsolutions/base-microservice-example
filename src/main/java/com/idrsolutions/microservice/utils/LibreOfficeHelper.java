@@ -39,7 +39,8 @@ public class LibreOfficeHelper {
      * @param file The office file to convert to PDF
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
-     * @deprecated Use {@link #convertDocToPDF(String, File, String, long)} instead
+     * @deprecated Use {@link #convertDocToPDF(String, File, String, long)} or
+     *             {@link #convertDocToPDF(String, File, String, long, File)} instead
      */
     @Deprecated(forRemoval = true)
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
