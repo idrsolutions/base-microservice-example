@@ -39,7 +39,10 @@ public class LibreOfficeHelper {
      * @param file The office file to convert to PDF
      * @param uuid The uuid of the conversion on which to set the error if one occurs
      * @return true on success, false on failure
+     * @deprecated Use {@link #convertDocToPDF(String, File, String, long)} or
+     *             {@link #convertDocToPDF(String, File, String, long, File)} instead
      */
+    @Deprecated(forRemoval = true)
     public static boolean convertToPDF(final String sofficePath, final File file, final String uuid) {
         return convertDocToPDF(sofficePath, file, uuid, 60000) == ProcessUtils.Result.SUCCESS;
     }
@@ -50,14 +53,32 @@ public class LibreOfficeHelper {
      * @param sofficePath The path to the soffice executable
      * @param file The office file to convert to PDF
      * @param uuid The uuid of the conversion on which to set the error if one occurs
+     * @param timeoutDuration The timeout duration in milliseconds for the conversion to complete before it is cancelled
      * @return Result enum value depending on the conversion result
      */
     public static ProcessUtils.Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration) {
+        return convertDocToPDF(sofficePath, file, uuid, timeoutDuration, file.getParentFile());
+    }
+
+    /**
+     * Converts an office file to PDF using the specified LibreOffice executable.
+     *
+     * @param sofficePath The path to the soffice executable
+     * @param file The office file to convert to PDF
+     * @param uuid The uuid of the conversion on which to set the error if one occurs
+     * @param timeoutDuration The timeout duration in milliseconds for the conversion to complete before it is cancelled
+     * @param outputDir The directory to save the converted file to
+     * @return Result enum value depending on the conversion result
+     */
+    public static ProcessUtils.Result convertDocToPDF(final String sofficePath, final File file, final String uuid, final long timeoutDuration, final File outputDir) {
         final String uniqueLOProfile = TEMP_DIR.replace('\\', '/') + "LO-" + uuid;
 
-        final String[] commandAndArgs = new String[] {sofficePath,
+        final String[] commandAndArgs = new String[] {
+                sofficePath,
                 "-env:UserInstallation=file:///" + uniqueLOProfile,
-                "--headless", "--convert-to", "pdf", file.getName()};
+                "--headless", "--convert-to", "pdf", file.getName(),
+                "--outdir", outputDir.getAbsolutePath()
+        };
 
         final ProcessUtils.Result result =  ProcessUtils.runProcess(commandAndArgs, file.getParentFile(), uuid, "LibreOfficeConversion", timeoutDuration);
 
